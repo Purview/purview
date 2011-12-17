@@ -1,0 +1,17 @@
+.*
+!.git*
+
+dist
+*.o
+*.hi
+*~
+\#*\#
+auto-save-list
+tramp
+*~
+*.sw[a-p]
+.directory
+*.un~
+Thumbs.db 
+Desktop.ini
+
