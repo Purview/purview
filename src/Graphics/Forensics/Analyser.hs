@@ -36,5 +36,6 @@ class Analyser a i | a -> i where
   version _ = read "1.0"
 
 -- | Indicates progress with a computation
-data Progress = ProgressMessage Text -- ^ A status message
-              | ProgressPercentage Double -- ^ A message indicating completion
+data Progress
+    = ProgressMessage Text      -- ^ A status message
+    | ProgressPercentage Double -- ^ A message indicating completion
