@@ -58,6 +58,7 @@ Library
 
   Default-extensions:
     DeriveDataTypeable,
+    FunctionalDependencies,
     MultiParamTypeClasses,
     OverloadedStrings
 
@@ -68,11 +69,21 @@ Library
     src
 
   -- Modules exported by the library.
-  -- Exposed-modules:
+  Exposed-modules:
+    Graphics.Forensics.Analyser,
+    Graphics.Forensics.Image,
+    Graphics.Forensics.Report,
+    Graphics.Forensics.Shape
 
   -- Packages needed in order to build this package.
   Build-depends:
-    base                        == 4.*
+    base                        == 4.*,
+    array                       == 0.3.*,
+    monad-coroutine             == 0.7.*,
+    mtl                         == 2.0.*,
+    text                        == 0.11.*,
+    unordered-containers        == 0.1.*,
+    vect                        == 0.4.*
 
   -- Modules not exported by this package.
   Other-modules:
