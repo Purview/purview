@@ -1,4 +1,10 @@
-module Graphics.Forensics.Image where
+module Graphics.Forensics.Image
+       ( -- * Image
+         Image
+         -- * File system
+       , readImage
+       , writeImage
+       ) where
 
 import Prelude hiding (lookup)
 
@@ -10,8 +16,11 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Generic.Mutable as M
 import Data.Vector.Unboxed.Base
 
+-- | An 'Image' is a 2-dimensional matrix of floating-point 'RGB' colors
 type Image = Array DIM2 (RGB Float)
 
+-- | Loads an 'Image' matrix from a file. Very many image formats are
+-- supported.
 readImage :: FilePath -> IO Image
 readImage path = do
   image <- Repa.runIL . Repa.readImage $ path
@@ -22,6 +31,8 @@ readImage path = do
       let c i = (/ 255) . fromIntegral . lookup $ coord :. i
       in RGB (c 0) (c 1) (c 2)
 
+-- | Saves the specified 'Image' matrix to the specified path. The
+-- image format is inferred from the file suffix.
 writeImage :: FilePath -> Image -> IO ()
 writeImage path image =
   Repa.runIL . Repa.writeImage path $
