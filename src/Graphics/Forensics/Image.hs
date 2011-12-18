@@ -36,12 +36,10 @@ writeImage path image =
     channel _ = undefined
 
 clamp :: (Num n, Ord n)=> n -> n -> n -> n
-clamp low hi num =
-  if num < low
-  then low
-  else if num > hi
-       then hi
-       else num
+clamp low hi num
+  | num < low = low
+  | num > hi  = hi
+  | otherwise = num
 
 instance Repa.Elt a => Repa.Elt (RGB a) where
   touch (RGB r g b) = do
