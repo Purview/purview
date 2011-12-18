@@ -60,10 +60,11 @@ Library
     DeriveDataTypeable,
     FunctionalDependencies,
     MultiParamTypeClasses,
-    OverloadedStrings
+    OverloadedStrings,
+    TypeFamilies
 
   GHC-options:
-    -Wall -Werror -ddump-splices
+    -Wall -Werror -ddump-splices -fno-warn-orphans
 
   Hs-source-dirs:
     src
@@ -78,12 +79,17 @@ Library
   -- Packages needed in order to build this package.
   Build-depends:
     base                        == 4.*,
-    array                       == 0.3.*,
+    colour                      == 2.3.*,
     monad-coroutine             == 0.7.*,
     mtl                         == 2.0.*,
+    repa                        == 2.0.*,
+    repa-algorithms             == 2.0.*,
+    repa-devil                  == 0.1.*,
+    repa-io                     == 2.0.*,
     text                        == 0.11.*,
     unordered-containers        == 0.1.*,
-    vect                        == 0.4.*
+    vect                        == 0.4.*,
+    vector                      == 0.7.*
 
   -- Modules not exported by this package.
   Other-modules:
