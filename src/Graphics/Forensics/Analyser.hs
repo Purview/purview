@@ -1,4 +1,11 @@
-module Graphics.Forensics.Analyser where
+-- | Provides a system for analysing image data.
+module Graphics.Forensics.Analyser
+       ( -- * Analyser
+         Analyser(..)
+         -- * Output
+       , Analysis
+       , Progress(..)
+       ) where
 
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors

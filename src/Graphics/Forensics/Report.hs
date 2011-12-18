@@ -1,4 +1,12 @@
-module Graphics.Forensics.Report where
+-- | Structured reports representing completed analyses.
+module Graphics.Forensics.Report
+       ( -- * Report
+         Report(..)
+         -- * Data
+       , ReportEntry(..)
+       , ReportLevel(..)
+       , ReportData(..)
+       ) where
 
 import Data.HashSet (HashSet)
 import Data.Text (Text)

@@ -1,4 +1,16 @@
-module Graphics.Forensics.Shape where
+-- | Representations of mathematical 2D shapes.
+module Graphics.Forensics.Shape
+       ( -- * Shape
+         Shape(..)
+         -- * Paths
+       , PathCommand(..)
+       , pathVectors
+       , allPathVectors
+         -- * Properties
+       , area
+       , bounds
+       , center
+       ) where
 
 import Data.Vect
 
@@ -26,7 +38,7 @@ data Shape =
 
 -- | A command indicating a continuation of a shape
 data PathCommand
-    = MoveTo  Vec2              -- ^ "Lift the pen" and put it at the pos
+    = MoveTo  Vec2              -- ^ \"Lift the pen\" and put it at the pos
     | LineTo  Vec2              -- ^ Draw a line
     | QuadTo  Vec2 Vec2         -- ^ Draw a quadratic curve
     | CubicTo Vec2 Vec2 Vec2    -- ^ Draw a cubic spline

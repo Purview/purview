@@ -1,3 +1,4 @@
+-- | Allows images to be treated like color matrices
 module Graphics.Forensics.Image
        ( -- * Image
          Image
