@@ -77,7 +77,7 @@ byteToFloatMatrix = Repa.map byteToFloat
 
 -- | Separates an image into a 3D matrix, where the first two
 -- coordinates specify the pixel coordinate, and the third coordinate
--- specifies the channel index
+-- specifies the channel index.
 splitChannels :: (Repa.Elt n) => Image n -> RGBChannels n
 splitChannels =
   flip2 Repa.traverse addChannel writeRGBColor
@@ -85,8 +85,8 @@ splitChannels =
     addChannel s = s :. 3
     writeRGBColor lookup (coord :. c) = channel c . lookup $ coord
     channel 0 = channelRed
-    channel 1 = channelBlue
-    channel 2 = channelGreen
+    channel 1 = channelGreen
+    channel 2 = channelBlue
     channel _ = undefined
 
 -- | Merges a 3D channel matrix into an SRGB color image.
