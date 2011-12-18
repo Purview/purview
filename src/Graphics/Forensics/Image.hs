@@ -82,8 +82,11 @@ splitChannels :: (Repa.Elt n) => Image n -> RGBChannels n
 splitChannels =
   flip2 Repa.traverse addChannel writeRGBColor
   where
+    {-# INLINE addChannel #-}
     addChannel s = s :. 3
+    {-# INLINE writeRGBColor #-}
     writeRGBColor lookup (coord :. c) = channel c . lookup $ coord
+    {-# INLINE channel #-}
     channel 0 = channelRed
     channel 1 = channelGreen
     channel 2 = channelBlue
@@ -94,30 +97,39 @@ mergeChannels :: (Repa.Elt n) => RGBChannels n -> Image n
 mergeChannels =
   flip2 Repa.traverse dropChannel readRGBColor
   where
+    {-# INLINE dropChannel #-}
     dropChannel (s :. _) = s
+    {-# INLINE readRGBColor #-}
     readRGBColor lookup coord =
       let color i = lookup $ coord :. i
       in RGB (color 0) (color 1) (color 2)
 
+{-# INLINE removeAlphaChannel #-}
 removeAlphaChannel :: (Repa.Elt n) => RGBChannels n -> RGBChannels n
 removeAlphaChannel =
-  flip2 Repa.traverse decrChannel id
+  Repa.force . flip2 Repa.traverse decrChannel id
   where
+    {-# INLINE decrChannel #-}
     decrChannel (s :. 4) = s :. 3
     decrChannel x        = x
 
+{-# INLINE flip2 #-}
 flip2 :: (a -> b -> c -> d) -> b -> c -> a -> d
 flip2 f b c a = f a b c
 
+{-# INLINE byteToFloat #-}
 byteToFloat :: Word8 -> Float
 byteToFloat = (/ 255) . fromIntegral
 
+{-# INLINE floatToByte #-}
 floatToByte :: Float -> Word8
 floatToByte = round . (* 255) . clamp 0 1
 
+{-# INLINE mapColor #-}
 mapColor :: (a -> b) -> RGB a -> RGB b
 mapColor f (RGB r g b) = RGB (f r) (f g) (f b)
 
+{-# INLINE clamp #-}
 clamp :: Ord n => n -> n -> n -> n
 clamp low hi num
   | num < low = low
@@ -125,12 +137,15 @@ clamp low hi num
   | otherwise = num
 
 instance Repa.Elt a => Repa.Elt (RGB a) where
+  {-# INLINE touch #-}
   touch (RGB r g b) = do
     Repa.touch r
     Repa.touch g
     Repa.touch b
 
+  {-# INLINE zero #-}
   zero = RGB Repa.zero Repa.zero Repa.zero
+  {-# INLINE one #-}
   one = RGB Repa.one Repa.one Repa.one
 
 data instance MVector s (RGB a) =
