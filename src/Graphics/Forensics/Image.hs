@@ -52,7 +52,7 @@ writeImage = (`fmap` splitChannels) . writeChannels
 -- | Loads a channel matrix from a file. Very many image formats are
 -- supported.
 readChannels :: FilePath -> IO (RGBChannels Word8)
-readChannels = Repa.runIL . Repa.readImage
+readChannels = fmap removeAlphaChannel . Repa.runIL . Repa.readImage
 
 -- | Saves the specified 'RGBChannels' matrix to the specified path.
 -- The image format is inferred from the file suffix.
@@ -98,6 +98,13 @@ mergeChannels =
     readRGBColor lookup coord =
       let color i = lookup $ coord :. i
       in RGB (color 0) (color 1) (color 2)
+
+removeAlphaChannel :: (Repa.Elt n) => RGBChannels n -> RGBChannels n
+removeAlphaChannel =
+  flip2 Repa.traverse decrChannel id
+  where
+    decrChannel (s :. 4) = s :. 3
+    decrChannel x        = x
 
 flip2 :: (a -> b -> c -> d) -> b -> c -> a -> d
 flip2 f b c a = f a b c
