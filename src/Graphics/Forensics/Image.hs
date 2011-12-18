@@ -2,50 +2,114 @@
 module Graphics.Forensics.Image
        ( -- * Image
          Image
-         -- * File system
+         -- ** File system
        , readImage
        , writeImage
+         -- * Channels
+       , RGBChannels
+         -- ** File system
+       , readChannels
+       , writeChannels
+         -- ** Conversion
+       , splitChannels
+       , mergeChannels
+         -- * Formats
+       , floatToByteImage
+       , byteToFloatImage
+       , floatToByteMatrix
+       , byteToFloatMatrix
        ) where
 
 import Prelude hiding (lookup)
 
 import Data.Colour.SRGB
-import Data.Array.Repa (Array, DIM2, (:.)(..))
+import Data.Array.Repa (Array, DIM2, DIM3, (:.)(..))
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.IO.DevIL as Repa
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Generic.Mutable as M
 import Data.Vector.Unboxed.Base
+import Data.Word
 
--- | An 'Image' is a 2-dimensional matrix of floating-point 'RGB' colors
-type Image = Array DIM2 (RGB Float)
+-- | An 'Image' is a 2-dimensional matrix of 'RGB' colors
+type Image n = Array DIM2 (RGB n)
+
+-- | A set of 'RGBChannels' is a 3-dimensional matrix of numbers, where
+-- the matrix's first two index coordinates specify the pixel, and
+-- the third index coordinate specifies the color channel index.
+type RGBChannels n = Array DIM3 n
 
 -- | Loads an 'Image' matrix from a file. Very many image formats are
 -- supported.
-readImage :: FilePath -> IO Image
-readImage path = do
-  image <- Repa.runIL . Repa.readImage $ path
-  return $ Repa.traverse image dropChannel readRGBColor
-  where
-    dropChannel (s :. _) = s
-    readRGBColor lookup coord =
-      let c i = (/ 255) . fromIntegral . lookup $ coord :. i
-      in RGB (c 0) (c 1) (c 2)
+readImage :: FilePath -> IO (Image Word8)
+readImage = fmap mergeChannels . readChannels
 
--- | Saves the specified 'Image' matrix to the specified path. The
--- image format is inferred from the file suffix.
-writeImage :: FilePath -> Image -> IO ()
-writeImage path image =
-  Repa.runIL . Repa.writeImage path $
-  Repa.traverse image addChannel writeRGBColor
+-- | Saves the specified 'Image' matrix to the specified path.
+-- The image format is inferred from the file suffix.
+writeImage :: FilePath -> Image Word8 -> IO ()
+writeImage = (`fmap` splitChannels) . writeChannels
+
+-- | Loads a channel matrix from a file. Very many image formats are
+-- supported.
+readChannels :: FilePath -> IO (RGBChannels Word8)
+readChannels = Repa.runIL . Repa.readImage
+
+-- | Saves the specified 'RGBChannels' matrix to the specified path.
+-- The image format is inferred from the file suffix.
+writeChannels :: FilePath -> RGBChannels Word8 -> IO ()
+writeChannels = fmap Repa.runIL . Repa.writeImage
+
+-- | Converts a 96-bit floating point color image to a 24-bit color image
+floatToByteImage :: Image Float -> Image Word8
+floatToByteImage = Repa.map $ mapColor floatToByte
+
+-- | Converts a 24-bit color image to a 96-bit floating point color image
+byteToFloatImage :: Image Word8 -> Image Float
+byteToFloatImage = Repa.map $ mapColor byteToFloat
+
+-- | Converts a matrix of floats between 0 and 1 to a matrix of bytes
+floatToByteMatrix :: Repa.Shape s => Array s Float -> Array s Word8
+floatToByteMatrix = Repa.map floatToByte
+
+-- | Converts a matrix of bytes to a matrix of floats between 0 and 1
+byteToFloatMatrix :: Repa.Shape s => Array s Word8 -> Array s Float
+byteToFloatMatrix = Repa.map byteToFloat
+
+-- | Separates an image into a 3D matrix, where the first two
+-- coordinates specify the pixel coordinate, and the third coordinate
+-- specifies the channel index
+splitChannels :: (Repa.Elt n) => Image n -> RGBChannels n
+splitChannels =
+  flip2 Repa.traverse addChannel writeRGBColor
   where
     addChannel s = s :. 3
-    writeRGBColor lookup (coord :. c) =
-      (* 255) . truncate . clamp 0 1 . channel c . lookup $ coord
+    writeRGBColor lookup (coord :. c) = channel c . lookup $ coord
     channel 0 = channelRed
     channel 1 = channelBlue
     channel 2 = channelGreen
     channel _ = undefined
+
+-- | Merges a 3D channel matrix into an SRGB color image.
+mergeChannels :: (Repa.Elt n) => RGBChannels n -> Image n
+mergeChannels =
+  flip2 Repa.traverse dropChannel readRGBColor
+  where
+    dropChannel (s :. _) = s
+    readRGBColor lookup coord =
+      let color i = lookup $ coord :. i
+      in RGB (color 0) (color 1) (color 2)
+
+flip2 :: (a -> b -> c -> d) -> b -> c -> a -> d
+flip2 f b c a = f a b c
+
+byteToFloat :: Word8 -> Float
+byteToFloat = (/ 255) . fromIntegral
+
+floatToByte :: Float -> Word8
+floatToByte = (* 255) . round . clamp 0 1
+
+mapColor :: (a -> b) -> RGB a -> RGB b
+mapColor f (RGB r g b) = RGB (f r) (f g) (f b)
 
 clamp :: Ord n => n -> n -> n -> n
 clamp low hi num

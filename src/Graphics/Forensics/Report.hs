@@ -11,6 +11,7 @@ module Graphics.Forensics.Report
 import Data.HashSet (HashSet)
 import Data.Text (Text)
 import Data.Vect
+import Data.Word
 
 import Graphics.Forensics.Image
 import Graphics.Forensics.Shape
@@ -42,9 +43,9 @@ data ReportData
     = -- | There's no relevant data
       ReportNothing
       -- | Represents an image
-    | ReportImage Image
+    | ReportImage (Image Word8)
       -- | Represents an image at the given offset
-    | ReportOffsetImage Vec2 Image
+    | ReportOffsetImage Vec2 (Image Word8)
       -- | Represents a shape
     | ReportShape Shape
       -- | Represents a shape at the given offset

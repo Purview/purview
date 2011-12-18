@@ -61,7 +61,8 @@ Library
     FunctionalDependencies,
     MultiParamTypeClasses,
     OverloadedStrings,
-    TypeFamilies
+    TypeFamilies,
+    TypeOperators
 
   GHC-options:
     -Wall -Werror -ddump-splices -fno-warn-orphans
