@@ -25,9 +25,9 @@ data Shape =
 
 -- | A command indicating a continuation of a shape
 data PathCommand
-    = MoveTo Vec2               -- ^ "Lift the pen" and put it at the pos
-    | LineTo Vec2               -- ^ Draw a line
-    | QuadTo Vec2 Vec2          -- ^ Draw a quadratic curve
+    = MoveTo  Vec2              -- ^ "Lift the pen" and put it at the pos
+    | LineTo  Vec2              -- ^ Draw a line
+    | QuadTo  Vec2 Vec2         -- ^ Draw a quadratic curve
     | CubicTo Vec2 Vec2 Vec2    -- ^ Draw a cubic spline
     | Close                     -- ^ Create a line to the starting position
 
