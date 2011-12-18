@@ -1,7 +1,9 @@
 .*
 !.git*
 
-dist
+cabal-dev/
+dist/
+
 *.o
 *.hi
 *~
@@ -12,6 +14,6 @@ tramp
 *.sw[a-p]
 .directory
 *.un~
-Thumbs.db 
+Thumbs.db
 Desktop.ini
 
