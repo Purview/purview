@@ -47,7 +47,7 @@ readImage = fmap mergeChannels . readChannels
 -- | Saves the specified 'Image' matrix to the specified path.
 -- The image format is inferred from the file suffix.
 writeImage :: FilePath -> Image Word8 -> IO ()
-writeImage = (`fmap` splitChannels) . writeChannels
+writeImage = (. splitChannels) . writeChannels
 
 -- | Loads a channel matrix from a file. Very many image formats are
 -- supported.
@@ -57,7 +57,7 @@ readChannels = fmap removeAlphaChannel . Repa.runIL . Repa.readImage
 -- | Saves the specified 'RGBChannels' matrix to the specified path.
 -- The image format is inferred from the file suffix.
 writeChannels :: FilePath -> RGBChannels Word8 -> IO ()
-writeChannels = fmap Repa.runIL . Repa.writeImage
+writeChannels = (. addAlphaChannel 255) . fmap Repa.runIL . Repa.writeImage
 
 -- | Converts a 96-bit floating point color image to a 24-bit color image
 floatToByteImage :: Image Float -> Image Word8
@@ -110,8 +110,27 @@ removeAlphaChannel =
   Repa.force . flip2 Repa.traverse decrChannel id
   where
     {-# INLINE decrChannel #-}
-    decrChannel (s :. 4) = s :. 3
-    decrChannel x        = x
+    decrChannel (s :. _) = s :. 3
+
+{-# INLINE addAlphaChannel #-}
+addAlphaChannel :: (Repa.Elt n) => n -> RGBChannels n -> RGBChannels n
+addAlphaChannel value =
+  until hasAlphaChannel $
+  Repa.force . flip2 Repa.traverse incrChannel setAlpha
+  where
+    {-# INLINE incrChannel #-}
+    incrChannel sh @ (ds :. chanCount)
+      | chanCount < 4 = ds :. 4
+      | otherwise     = sh
+    {-# INLINE setAlpha #-}
+    setAlpha _      (_ :. 3) = value
+    setAlpha lookup coord    = lookup coord
+
+{-# INLINE hasAlphaChannel #-}
+hasAlphaChannel :: (Repa.Elt n) => RGBChannels n -> Bool
+hasAlphaChannel channels =
+  let (_ :. d) = Repa.extent channels
+  in d > 3
 
 {-# INLINE flip2 #-}
 flip2 :: (a -> b -> c -> d) -> b -> c -> a -> d
