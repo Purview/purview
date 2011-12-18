@@ -47,7 +47,7 @@ writeImage path image =
     channel 2 = channelGreen
     channel _ = undefined
 
-clamp :: (Num n, Ord n)=> n -> n -> n -> n
+clamp :: Ord n => n -> n -> n -> n
 clamp low hi num
   | num < low = low
   | num > hi  = hi
