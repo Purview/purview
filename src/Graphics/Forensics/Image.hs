@@ -106,7 +106,7 @@ byteToFloat :: Word8 -> Float
 byteToFloat = (/ 255) . fromIntegral
 
 floatToByte :: Float -> Word8
-floatToByte = (* 255) . round . clamp 0 1
+floatToByte = round . (* 255) . clamp 0 1
 
 mapColor :: (a -> b) -> RGB a -> RGB b
 mapColor f (RGB r g b) = RGB (f r) (f g) (f b)
