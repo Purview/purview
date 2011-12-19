@@ -4,12 +4,9 @@ module Graphics.Forensics.Analyser
          Analyser(..)
          -- * Output
        , Analysis
-       , Progress(..)
        ) where
 
-import Control.Monad.Coroutine
-import Control.Monad.Coroutine.SuspensionFunctors
-import Control.Monad.Writer
+import Control.Monad.Progress
 
 import Data.Text (Text)
 import Data.Version (Version)
@@ -17,7 +14,7 @@ import Data.Version (Version)
 import Graphics.Forensics.Report
 
 -- | A running analysis.
-type Analysis = Coroutine (Yield Progress) (Writer Report) ()
+type Analysis = Progress Text Report
 
 {-| An 'Analyser' that analyses some type of item.
 
@@ -41,8 +38,3 @@ class Analyser a i | a -> i where
   -- | The version of this analyser
   version :: a -> Version
   version _ = read "1.0"
-
--- | Indicates progress with a computation
-data Progress
-    = ProgressMessage Text      -- ^ A status message
-    | ProgressPercentage Double -- ^ A message indicating completion
