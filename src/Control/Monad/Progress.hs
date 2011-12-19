@@ -33,7 +33,7 @@ events, which are used to track the progress of the wrapped
 procedure.
 
 The 'return' function simply creates a taskless procedure with no
-steps, while '(>>=)' adds a procedure to the currently active step.
+steps, while '>>=' adds a procedure to the currently active step.
 -}
 type Progress l = ProgressT l Identity
 
@@ -53,7 +53,7 @@ events, which are used to track the progress of the wrapped
 procedure.
 
 The 'return' function simply creates a taskless procedure with no
-steps, while '(>>=)' adds a procedure to the currently active step.
+steps, while '>>=' adds a procedure to the currently active step.
 -}
 newtype ProgressT l m a =
   ProgressT
