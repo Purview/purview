@@ -61,7 +61,8 @@ Library
     MultiParamTypeClasses,
     OverloadedStrings,
     TypeFamilies,
-    TypeOperators
+    TypeOperators,
+    TypeSynonymInstances
 
   GHC-options:
     -Wall -Werror -ddump-splices -fno-warn-orphans
@@ -72,6 +73,7 @@ Library
   -- Modules exported by the library.
   Exposed-modules:
     Control.Monad.Progress,
+    Graphics.Forensics.Algorithms,
     Graphics.Forensics.Analyser,
     Graphics.Forensics.Image,
     Graphics.Forensics.Report,
@@ -81,6 +83,7 @@ Library
   Build-depends:
     base                        == 4.*,
     colour                      == 2.3.*,
+    array                       == 0.3.*,
     monad-coroutine             == 0.7.*,
     mtl                         == 2.0.*,
     repa                        == 2.0.*,
