@@ -57,6 +57,7 @@ Library
     Haskell2010
 
   Default-extensions:
+    FlexibleInstances,
     FunctionalDependencies,
     MultiParamTypeClasses,
     OverloadedStrings,
@@ -82,8 +83,8 @@ Library
   -- Packages needed in order to build this package.
   Build-depends:
     base                        == 4.*,
-    colour                      == 2.3.*,
     array                       == 0.3.*,
+    colour                      == 2.3.*,
     monad-coroutine             == 0.7.*,
     mtl                         == 2.0.*,
     repa                        == 2.0.*,
