@@ -62,8 +62,7 @@ Library
     MultiParamTypeClasses,
     OverloadedStrings,
     TypeFamilies,
-    TypeOperators,
-    TypeSynonymInstances
+    TypeOperators
 
   GHC-options:
     -Wall -Werror -ddump-splices -fno-warn-orphans
