@@ -23,7 +23,7 @@ module Graphics.Forensics.Image
 import Prelude hiding (lookup)
 
 import Data.Colour.SRGB
-import Data.Array.Repa (Array, DIM2, DIM3, (:.)(..))
+import Data.Array.Repa (Array, DIM2, DIM3, Z(..), (:.)(..))
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.IO.DevIL as Repa
 import qualified Data.Vector.Generic as G
@@ -128,9 +128,7 @@ addAlphaChannel value =
 
 {-# INLINE hasAlphaChannel #-}
 hasAlphaChannel :: (Repa.Elt n) => RGBChannels n -> Bool
-hasAlphaChannel channels =
-  let (_ :. d) = Repa.extent channels
-  in d > 3
+hasAlphaChannel (Repa.Array (Z :. _ :. _ :. d) _) = d > 3
 
 {-# INLINE flip2 #-}
 flip2 :: (a -> b -> c -> d) -> b -> c -> a -> d
