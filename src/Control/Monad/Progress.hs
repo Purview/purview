@@ -87,7 +87,6 @@ runProgressT action = do
     Left (Yield stack cont) -> Left (ProgressT cont, stack)
     Right a -> Right a
 
-
 -- | A stack with information about running 'Task's. The currently
 -- running task is the first element in the stack; parent tasks
 -- follow subsequently.
@@ -138,11 +137,10 @@ step :: Monad m => ProgressT l m ()
 step = ProgressT $ do
   (current : tasks) <- lift get
   let currentStep = taskStep current
-      nextStep =
-        if currentStep < taskTotalSteps current
-        then currentStep + 1
-        else currentStep
+      nextStep = currentStep + 1
       updatedTask = current { taskStep = nextStep }
       updatedTasks = updatedTask : tasks
-  when (currentStep /= nextStep) $ yield updatedTasks
+  when (currentStep > taskTotalSteps current) $
+    fail "The task has already completed"
+  yield updatedTasks
   lift . put $ updatedTasks
