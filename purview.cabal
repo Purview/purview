@@ -75,10 +75,10 @@ Library
     Control.Monad.Progress,
     Graphics.Forensics.Algorithms,
     Graphics.Forensics.Analyser,
+    Graphics.Forensics.Array,
     Graphics.Forensics.Channels,
     Graphics.Forensics.Color,
     Graphics.Forensics.Image,
-    Graphics.Forensics.Matrix,
     Graphics.Forensics.Report,
     Graphics.Forensics.Shape
 
@@ -128,6 +128,7 @@ Test-suite test-purview
 
   Build-depends:
     base                        == 4.*,
+    array                       == 0.3.*,
     colour                      == 2.3.*,
     purview                     == 0.1.*,
     repa                        == 2.0.*,

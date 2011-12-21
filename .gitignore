@@ -6,6 +6,7 @@ dist/
 
 *.o
 *.hi
+*.hse
 *~
 \#*\#
 auto-save-list

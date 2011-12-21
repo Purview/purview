@@ -17,20 +17,20 @@ import Data.Array.Repa (Array, DIM2, (:.)(..))
 import qualified Data.Array.Repa as Repa
 import Data.Word
 
+import Graphics.Forensics.Array
 import Graphics.Forensics.Channels
 import Graphics.Forensics.Color
-import Graphics.Forensics.Matrix
 
--- | An 'Image' is a 2-dimensional matrix of 'RGBA' colors
+-- | An 'Image' is a 2-dimensional array of 'RGBA' colors
 type Image n = Array DIM2 (RGBA n)
 
 
--- | Loads an 'Image' matrix from a file. Very many image formats are
+-- | Loads an 'Image' array from a file. Very many image formats are
 -- supported.
 readImage :: FilePath -> IO (Image Word8)
 readImage = fmap mergeChannels . readChannels
 
--- | Saves the specified 'Image' matrix to the specified path.
+-- | Saves the specified 'Image' array to the specified path.
 -- The image format is inferred from the file suffix.
 writeImage :: FilePath -> Image Word8 -> IO ()
 writeImage = (. splitChannels) . writeChannels
@@ -43,7 +43,7 @@ floatToByteImage = Repa.map $ mapColor floatToByte
 byteToFloatImage :: Image Word8 -> Image Float
 byteToFloatImage = Repa.map $ mapColor byteToFloat
 
--- | Separates an image into a 3D matrix, where the first two
+-- | Separates an image into a 3D array, where the first two
 -- coordinates specify the pixel coordinate, and the third coordinate
 -- specifies the channel index.
 splitChannels :: (Repa.Elt n) => Image n -> Channels n
@@ -61,10 +61,10 @@ splitChannels =
     channel 3 = channelAlpha
     channel _ = undefined
 
--- | Merges a 3D channel matrix into an SRGBA color image.
+-- | Merges a 3D channel array into an SRGBA color image.
 mergeChannels :: (Repa.Elt n) => Channels n -> Image n
 mergeChannels =
-  flip2 Repa.traverse dropChannel readRGBColor . channelMatrix .
+  flip2 Repa.traverse dropChannel readRGBColor . channelArray .
   addAlphaChannel Repa.zero
   where
     {-# INLINE dropChannel #-}

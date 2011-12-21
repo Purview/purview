@@ -10,14 +10,18 @@ import Test.Framework.TH
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck
 
-import Test.Graphics.Forensics.Matrix ()
+import Test.Graphics.Forensics.Array ()
 
 testGroup :: Test
 testGroup = $(testGroupGenerator)
 
-prop_losslessImage :: Image Word8 -> Bool
-prop_losslessImage img =
+prop_imageConversion :: Image Word8 -> Bool
+prop_imageConversion img =
   (floatToByteImage . byteToFloatImage $ img) == img
+
+prop_channelSplitting :: Image Word8 -> Bool
+prop_channelSplitting img =
+  (mergeChannels . splitChannels $ img) == img
 
 instance Arbitrary a => Arbitrary (RGBA a) where
   arbitrary = do
