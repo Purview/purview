@@ -84,6 +84,7 @@ Library
     base                        == 4.*,
     array                       == 0.3.*,
     colour                      == 2.3.*,
+    dsp                         == 0.2.*,
     monad-coroutine             == 0.7.*,
     mtl                         == 2.0.*,
     repa                        == 2.0.*,
