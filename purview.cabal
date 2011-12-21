@@ -75,7 +75,10 @@ Library
     Control.Monad.Progress,
     Graphics.Forensics.Algorithms,
     Graphics.Forensics.Analyser,
+    Graphics.Forensics.Channels,
+    Graphics.Forensics.Color,
     Graphics.Forensics.Image,
+    Graphics.Forensics.Matrix,
     Graphics.Forensics.Report,
     Graphics.Forensics.Shape
 

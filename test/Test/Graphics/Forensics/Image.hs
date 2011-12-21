@@ -2,9 +2,10 @@ module Test.Graphics.Forensics.Image where
 
 import Data.Array.Repa
 import Data.Array.Repa.Arbitrary
-import Data.Colour.SRGB
 import Data.Word
 
+import Graphics.Forensics.Color
+import Graphics.Forensics.Matrix
 import Graphics.Forensics.Image
 
 import Test.Framework
@@ -23,12 +24,13 @@ prop_losslessMatrix :: Array DIM2 Word8 -> Bool
 prop_losslessMatrix matrix =
   (floatToByteMatrix . byteToFloatMatrix $ matrix) == matrix
 
-instance Arbitrary a => Arbitrary (RGB a) where
+instance Arbitrary a => Arbitrary (RGBA a) where
   arbitrary = do
     r <- arbitrary
     g <- arbitrary
     b <- arbitrary
-    return $ RGB r g b
+    a <- arbitrary
+    return $ RGBA r g b a
 
 instance (Elt a, Arbitrary a)
          => Arbitrary (Array DIM2 a) where
