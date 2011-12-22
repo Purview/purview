@@ -1,14 +1,21 @@
 -- | Structured reports representing completed analyses.
 module Graphics.Forensics.Report
        ( -- * Report
-         Report(..)
+         Report
          -- * Data
        , ReportEntry(..)
        , ReportLevel(..)
        , ReportData(..)
+         -- ** Helper functions
+       , reportNothing
+       , reportImage
+       , reportOffsetImage
+       , reportShape
+       , reportOffsetShape
+       , reportMovedShape
        ) where
 
-import Data.HashSet (HashSet)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Vect
 import Data.Word
@@ -17,10 +24,7 @@ import Graphics.Forensics.Image
 import Graphics.Forensics.Shape
 
 -- | The result of an analysis.
-newtype Report =
-  Report
-  { reportEntries :: HashSet ReportEntry    -- ^ Report entries
-  }
+type Report = Set ReportEntry
 
 -- | A part of a report
 data ReportEntry =
@@ -28,7 +32,15 @@ data ReportEntry =
   { reportLevel   :: ReportLevel    -- ^ Relevance level
   , reportMessage :: Text           -- ^ Human-readable message
   , reportData    :: ReportData     -- ^ Machine-readable data
-  }
+  } deriving (Show, Eq)
+
+instance Ord ReportEntry where
+  a `compare` b =
+    if compareLevels == EQ
+    then reportMessage a `compare` reportMessage b
+    else compareLevels
+    where
+      compareLevels = reportLevel a `compare` reportLevel b
 
 -- | An indicator for how relevant a 'ReportEntry' is
 data ReportLevel
@@ -37,6 +49,7 @@ data ReportLevel
     | WarningLevel      -- ^ Suspicious data
     | ErrorLevel        -- ^ Erroneous data
     | CriticalLevel     -- ^ All-or-nothing fatal indicator
+      deriving (Show, Eq, Ord)
 
 -- | Machine-readable data as part of a 'ReportEntry'
 data ReportData
@@ -52,3 +65,23 @@ data ReportData
     | ReportOffsetShape Vec2 Shape
       -- | Represents a shape that has been moved between offsets
     | ReportMovedShape Vec2 Vec2 Shape
+      deriving (Show, Eq)
+
+reportNothing :: ReportData
+reportNothing = ReportNothing
+
+reportImage :: Image Word8 -> ReportData
+reportImage = ReportImage
+
+reportOffsetImage :: Float -> Float -> Image Word8 -> ReportData
+reportOffsetImage x y = ReportOffsetImage (Vec2 x y)
+
+reportShape :: Shape -> ReportData
+reportShape = ReportShape
+
+reportOffsetShape :: Float -> Float -> Shape -> ReportData
+reportOffsetShape x y = ReportOffsetShape (Vec2 x y)
+
+reportMovedShape :: Float -> Float -> Float -> Float
+                    -> Shape -> ReportData
+reportMovedShape x0 y0 x1 y1 = ReportMovedShape (Vec2 x0 y0) (Vec2 x1 y1)

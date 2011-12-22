@@ -2,6 +2,8 @@
 module Graphics.Forensics.Image
        ( -- * Image
          Image
+       , ByteImage
+       , FloatImage
          -- ** File system
        , readImage
        , writeImage
@@ -24,6 +26,9 @@ import Graphics.Forensics.Color
 -- | An 'Image' is a 2-dimensional array of 'RGBA' colors
 type Image n = Array DIM2 (RGBA n)
 
+type ByteImage = Image Word8
+
+type FloatImage = Image Float
 
 -- | Loads an 'Image' array from a file. Very many image formats are
 -- supported.

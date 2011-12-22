@@ -2,6 +2,8 @@
 module Graphics.Forensics.Shape
        ( -- * Shape
          Shape(..)
+       , rectangle
+       , circle
          -- * Paths
        , PathCommand(..)
        , pathVectors
@@ -13,6 +15,7 @@ module Graphics.Forensics.Shape
        ) where
 
 import Data.Vect
+import Data.Vect.Float.Instances ()
 
 {-| Some geometrical 2-dimensional 'Shape'.
 
@@ -35,6 +38,13 @@ data Shape =
   Path
   { pathCommands :: [PathCommand]
   }
+  deriving (Show, Eq)
+
+rectangle :: Float -> Float -> Shape
+rectangle w h = Rectangle (Vec2 w h)
+
+circle :: Float -> Shape
+circle = Circle
 
 -- | A command indicating a continuation of a shape
 data PathCommand
@@ -43,6 +53,7 @@ data PathCommand
     | QuadTo  Vec2 Vec2         -- ^ Draw a quadratic curve
     | CubicTo Vec2 Vec2 Vec2    -- ^ Draw a cubic spline
     | Close                     -- ^ Create a line to the starting position
+      deriving (Show, Eq)
 
 -- | If the specified 'PathCommand' has dominant position vectors,
 -- returns those vectors.
