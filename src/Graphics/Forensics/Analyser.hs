@@ -7,6 +7,8 @@ module Graphics.Forensics.Analyser
          -- * Task handling
        , task
        , step
+         -- * Evaluation
+       , evaluate
          -- * Reporting
        , report
        , reportEntry
@@ -26,6 +28,7 @@ module Graphics.Forensics.Analyser
        , readVersion
        ) where
 
+import Control.DeepSeq
 import Control.Monad.Progress (ProgressT)
 import qualified Control.Monad.Progress as Progress
 import Control.Monad.Writer
@@ -63,6 +66,11 @@ data Analyser i =
     -- | The version of this analyser
   , version :: Version
   }
+
+-- | Fully evaluates the argument, ensuring that it is evaluated
+-- before the next monad action.
+evaluate :: (NFData a) => a -> Analysis a
+evaluate a = a `deepseq` return a
 
 -- | Wraps an 'Analysis' in a task. This wrapping makes it possible to
 -- monitor the progress of the task.
