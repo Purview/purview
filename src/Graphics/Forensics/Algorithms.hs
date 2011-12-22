@@ -54,11 +54,13 @@ dft1d m a
 dft2d :: DFT.Mode -> Repa.Array DIM2 Complex -> Repa.Array DIM2 Complex
 dft2d m a
   | isPowerOf2 = DFT.fft2d m a
-  | otherwise  = glueArrays . map (dft1d m) $ slices
+  | otherwise  = glueArrays . map (dft1d m) $ tSlices
   where
     (Z :. x :. y) = Repa.extent a
     isPowerOf2    = all DFT.isPowerOfTwo [x, y]
     slices        = sliceArray a
+    tSlices       = sliceArray transposed
+    transposed    = Repa.transpose . glueArrays . map (dft1d m) $ slices
 
 -- | Applies the discrete fourier transform to a 3-dimensional array.
 -- If any of the array dimensions is a power of 2, 
