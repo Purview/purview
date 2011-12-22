@@ -17,6 +17,7 @@ module Graphics.Forensics.Array
 import Data.Array as Array
 import Data.Array.Repa (Z(..), (:.)(..))
 import qualified Data.Array.Repa as Repa
+import Data.List
 import Data.Word
 
 -- | Converts an array of floats between 0 and 1 to an array of bytes
@@ -43,7 +44,7 @@ floatToByte = round . (* 255) . clamp 0 1
 glueArrays :: (Repa.Elt a, Repa.Shape sh)
                => [Repa.Array sh a] -> Repa.Array (sh :. Int) a
 glueArrays =
-  Repa.force . foldl1 Repa.append . map makeFlatArray
+  Repa.force . foldl1' Repa.append . map makeFlatArray
   where
     makeFlatArray arr @ (Repa.Array sh _) = Repa.reshape (sh :. 1) arr
 
