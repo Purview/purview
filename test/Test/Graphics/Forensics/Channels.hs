@@ -11,19 +11,19 @@ import Test.Framework.TH
 import Test.Framework.Providers.QuickCheck2
 import Test.QuickCheck
 
+import TypeLevel.NaturalNumber
+
 testGroup :: Test
 testGroup = $(testGroupGenerator)
 
-prop_channelConversion :: Channels Word8 -> Bool
+prop_channelConversion :: Channels N4 Word8 -> Bool
 prop_channelConversion channels =
   (floatToByteChannels . byteToFloatChannels $ channels) == channels
 
 instance (Elt a, Arbitrary a)
-         => Arbitrary (Channels a) where
+         => Arbitrary (Channels N4 a) where
   arbitrary = do
-    isRgba <- arbitrary
     sh0 <- arbitrarySmallShape 128
-    let sh = if isRgba then sh0 :. 4 else sh0 :. 3
-        constr = if isRgba then RGBAChannels else RGBChannels
+    let sh = sh0 :. 4
     list <- arbitraryListOfLength . size $ sh
-    return $ constr . fromList sh $ list
+    return . makeChannels . fromList sh $ list

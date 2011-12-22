@@ -1,7 +1,9 @@
 -- | A representation of image data based on 3-dimensional 'Array's
 module Graphics.Forensics.Channels
        ( -- * Channels
-         Channels(..)
+         Channels
+       , channelArray
+       , makeChannels
          -- ** File system
        , readChannels
        , writeChannels
@@ -17,75 +19,78 @@ module Graphics.Forensics.Channels
        , removeAlphaChannel
        ) where
 
-import Data.Array.Repa (Array, DIM3, (:.)(..))
+import Data.Array.Repa (Array(..), DIM3, (:.)(..))
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.IO.DevIL as Repa
 import Data.Word
+
+import TypeLevel.NaturalNumber
 
 import Graphics.Forensics.Array
 
 -- | A set of 'Channels' is a 3-dimensional array of numbers, where
 -- the array's first two index coordinates specify the pixel, and
 -- the third index coordinate specifies the color channel index.
-data Channels n =
-  -- | A channel array with 3 channels
-  RGBChannels
-  { channelArray :: Array DIM3 n
-  } |
-  -- | A channel array with 4 channels
-  RGBAChannels
-  { channelArray :: Array DIM3 n
-  } deriving (Show, Eq)
+data Channels r n =
+  Channels
+  { -- | The array storing the channel matrix.
+    channelArray :: Array DIM3 n
+  }
+  deriving (Show, Eq)
+
+-- | Safely constructs 'Channels' from an array by checking that the
+-- correct number of channels are present.
+makeChannels :: forall n r . (Repa.Elt n, NaturalNumber r)
+                => Array DIM3 n -> Channels r n
+makeChannels arr @ (Array (_ :. nr) _) =
+  if nr == naturalNumberAsInt (undefined :: r)
+  then Channels arr
+  else error "Array extent doesn't match requested channel count"
 
 -- | Loads a channel array from a file. Very many image formats are
 -- supported. The channels are guaranteed to be in RGBA format.
-readChannels :: FilePath -> IO (Channels Word8)
-readChannels = fmap RGBAChannels . Repa.runIL . Repa.readImage
+readChannels :: FilePath -> IO (Channels N4 Word8)
+readChannels = fmap makeChannels . Repa.runIL . Repa.readImage
 
 -- | Saves the specified 'Channels' array to the specified path.
 -- The image format is inferred from the file suffix.
-writeChannels :: FilePath -> Channels Word8 -> IO ()
-writeChannels =
-  (. channelArray . addAlphaChannel 255) .
-  fmap Repa.runIL . Repa.writeImage
+writeChannels :: FilePath -> Channels N4 Word8 -> IO ()
+writeChannels = (. channelArray) . fmap Repa.runIL . Repa.writeImage
 
 -- | Converts a 'Float'-based channel array to a 'Word8'-based one.
-floatToByteChannels :: Channels Float -> Channels Word8
+floatToByteChannels :: (NaturalNumber r)
+                       => Channels r Float -> Channels r Word8
 floatToByteChannels = mapChannels floatToByte
 
 -- | Converts a 'Word8'-based channel array to a 'Float'-based one.
-byteToFloatChannels :: Channels Word8 -> Channels Float
+byteToFloatChannels :: (NaturalNumber r)
+                       => Channels r Word8 -> Channels r Float
 byteToFloatChannels = mapChannels byteToFloat
 
 -- | Performs an arbitrary operation on the channel array of some
 -- 'Channels'.
-mapChannels :: (Repa.Elt n1, Repa.Elt n2)
-               => (n1 -> n2) -> Channels n1 -> Channels n2
+mapChannels :: (Repa.Elt n1, Repa.Elt n2, NaturalNumber r)
+               => (n1 -> n2) -> Channels r n1 -> Channels r n2
 mapChannels = mapChannelsArray . Repa.map
 
-mapChannelsArray :: (Repa.Elt n1, Repa.Elt n2)
+mapChannelsArray :: (Repa.Elt n1, Repa.Elt n2, NaturalNumber r)
                      => (Array DIM3 n1 -> Array DIM3 n2)
-                     -> Channels n1 -> Channels n2
-mapChannelsArray f (RGBAChannels array) = RGBAChannels . f $ array
-mapChannelsArray f (RGBChannels array)  = RGBChannels  . f $ array
+                     -> Channels r n1 -> Channels r n2
+mapChannelsArray f (Channels array) = makeChannels . f $ array
 
--- | Removes an alpha channel from the specified 'Channels', or does
--- nothing if there is no alpha channel.
-removeAlphaChannel :: (Repa.Elt n) => Channels n -> Channels n
+-- | Removes an alpha channel from the specified 'Channels'.
+removeAlphaChannel :: (Repa.Elt n) => Channels N4 n -> Channels N3 n
 removeAlphaChannel =
-  RGBChannels . Repa.force . flip2 Repa.traverse decrChannel id . channelArray
+  makeChannels . Repa.force . flip2 Repa.traverse decrChannel id . channelArray
   where
     {-# INLINE decrChannel #-}
     decrChannel (s :. _) = s :. 3
 
--- | Adds an alpha channel with the specified constant value, if the
--- channels don't already have an alpha channel.
-addAlphaChannel :: (Repa.Elt n) => n -> Channels n -> Channels n
+-- | Adds an alpha channel with the specified constant value.
+addAlphaChannel :: (Repa.Elt n) => n -> Channels N3 n -> Channels N4 n
 addAlphaChannel value =
-  until hasAlphaChannel $
-  RGBAChannels .
-  Repa.force . flip2 Repa.traverse incrChannel setAlpha .
-  channelArray
+  makeChannels . Repa.force .
+  flip2 Repa.traverse incrChannel setAlpha . channelArray
   where
     {-# INLINE incrChannel #-}
     incrChannel (ds :. 3) = ds :. 4
@@ -94,10 +99,10 @@ addAlphaChannel value =
     setAlpha _    (_ :. 3) = value
     setAlpha look coord    = look coord
 
--- | Checks whether the 'Channels' contain an alpha channel
-hasAlphaChannel :: (Repa.Elt n) => Channels n -> Bool
-hasAlphaChannel RGBAChannels {} = True
-hasAlphaChannel RGBChannels  {} = False
+-- | Checks whether the 'Channels' contain an alpha channel.
+hasAlphaChannel :: forall n r . (Repa.Elt n, NaturalNumber r)
+                   => Channels r n -> Bool
+hasAlphaChannel _ = naturalNumberAsInt (undefined :: r) > 3
 
 {-# INLINE flip2 #-}
 flip2 :: (a -> b -> c -> d) -> b -> c -> a -> d

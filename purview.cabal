@@ -61,6 +61,7 @@ Library
     FunctionalDependencies,
     MultiParamTypeClasses,
     OverloadedStrings,
+    ScopedTypeVariables,
     TypeFamilies,
     TypeOperators
 
@@ -101,6 +102,7 @@ Library
     repa-io                     == 2.0.*,
     text                        == 0.11.*,
     transformers                == 0.2.*,
+    type-level-natural-number   == 1.1.*,
     containers                  == 0.4.*,
     vect                        == 0.4.*,
     vector                      == 0.7.*
@@ -163,4 +165,5 @@ Test-suite test-purview
     test-framework              == 0.4.*,
     test-framework-th           == 0.2.*,
     test-framework-quickcheck2  == 0.2.*,
+    type-level-natural-number   == 1.1.*,
     QuickCheck                  == 2.4.*

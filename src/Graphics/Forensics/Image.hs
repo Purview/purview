@@ -19,6 +19,8 @@ import Data.Array.Repa (Array, DIM2, (:.)(..))
 import qualified Data.Array.Repa as Repa
 import Data.Word
 
+import TypeLevel.NaturalNumber
+
 import Graphics.Forensics.Array
 import Graphics.Forensics.Channels
 import Graphics.Forensics.Color
@@ -51,9 +53,9 @@ byteToFloatImage = Repa.map $ mapColor byteToFloat
 -- | Separates an image into a 3D array, where the first two
 -- coordinates specify the pixel coordinate, and the third coordinate
 -- specifies the channel index.
-splitChannels :: (Repa.Elt n) => Image n -> Channels n
+splitChannels :: (Repa.Elt n) => Image n -> Channels N4 n
 splitChannels =
-  RGBAChannels . flip2 Repa.traverse addChannel writeRGBColor
+  makeChannels . flip2 Repa.traverse addChannel writeRGBColor
   where
     {-# INLINE addChannel #-}
     addChannel s = s :. 4
@@ -67,10 +69,9 @@ splitChannels =
     channel _ = undefined
 
 -- | Merges a 3D channel array into an SRGBA color image.
-mergeChannels :: (Repa.Elt n) => Channels n -> Image n
+mergeChannels :: (Repa.Elt n) => Channels N4 n -> Image n
 mergeChannels =
-  flip2 Repa.traverse dropChannel readRGBColor . channelArray .
-  addAlphaChannel Repa.zero
+  flip2 Repa.traverse dropChannel readRGBColor . channelArray
   where
     {-# INLINE dropChannel #-}
     dropChannel (s :. _) = s
