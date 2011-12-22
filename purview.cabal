@@ -158,6 +158,7 @@ Test-suite test-purview
     colour                      == 2.3.*,
     purview                     == 0.1.*,
     repa                        == 2.0.*,
+    repa-algorithms             == 2.0.0.*,
     test-framework              == 0.4.*,
     test-framework-th           == 0.2.*,
     test-framework-quickcheck2  == 0.2.*,
