@@ -57,6 +57,7 @@ Library
     Haskell2010
 
   Default-extensions:
+    BangPatterns,
     FlexibleInstances,
     FunctionalDependencies,
     MultiParamTypeClasses,
@@ -85,7 +86,8 @@ Library
 
     Graphics.Forensics.Analysers,
 
-    Graphics.Forensics.Analyser.Test
+    Graphics.Forensics.Analyser.Test,
+    Graphics.Forensics.Analyser.LuminanceGradient
 
   -- Packages needed in order to build this package.
   Build-depends:
@@ -130,6 +132,7 @@ Executable purview-console
   Build-depends:
     base                        == 4.*,
     ansi-terminal               == 0.5.*,
+    containers                  == 0.4.*,
     cmdargs                     == 0.9.*,
     mtl                         == 2.0.*,
     purview                     == 0.1.*,
