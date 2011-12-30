@@ -1,8 +1,6 @@
 
 import Prelude hiding (putStrLn)
 
-import Control.Concurrent
-
 import Control.Monad
 import Control.Monad.Progress
 import Control.Monad.Writer
@@ -86,7 +84,6 @@ runAnalysis currReport analysis =
   case result of
     Left (cont, stack) -> do
       whenLoud $ renderTaskStack stack
-      threadDelay 1000000
       runAnalysis report cont
     Right () -> whenLoud $ do
       hClearFromCursorToScreenEnd stderr
