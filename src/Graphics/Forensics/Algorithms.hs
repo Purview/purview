@@ -1,5 +1,5 @@
 -- | Provides algorithms to manipulate matrices
-module Graphics.Forensics.Algorithms 
+module Graphics.Forensics.Algorithms
        ( -- * Convolution
          ConvolutionMode,
          convolve,

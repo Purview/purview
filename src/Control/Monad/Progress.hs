@@ -58,11 +58,11 @@ steps, while '>>=' adds a procedure to the currently active step.
 newtype ProgressT l m a =
   ProgressT
   { -- | The underlying 'Coroutine' describing the procedure in progress.
-    procedure ::
-       Coroutine
-       (Yield (TaskStack l))
-       (StateT (TaskStack l) m) a
+    procedure :: Procedure l m a
   }
+
+type Procedure l m a =
+  Coroutine (Yield (TaskStack l)) (StateT (TaskStack l) m) a
 
 instance MonadTrans (ProgressT l) where
   lift = ProgressT . lift . lift
@@ -114,6 +114,9 @@ task label steps action = ProgressT $ do
   -- Add the task to the task stack
   lift . modify $ pushTask newTask
 
+  -- Report the current progress
+  reportProgress
+
   -- Perform the procedure for the task
   result <- procedure action
 
@@ -140,7 +143,13 @@ step = ProgressT $ do
       nextStep = currentStep + 1
       updatedTask = current { taskStep = nextStep }
       updatedTasks = updatedTask : tasks
-  when (currentStep > taskTotalSteps current) $
-    fail "The task has already completed"
-  yield updatedTasks
-  lift . put $ updatedTasks
+  if currentStep <= taskTotalSteps current
+    then lift . put $ updatedTasks
+    else return ()
+  reportProgress
+
+reportProgress :: Monad m => Procedure l m ()
+reportProgress = do
+  tasks <- lift get
+  yield tasks
+  lift . put $ tasks

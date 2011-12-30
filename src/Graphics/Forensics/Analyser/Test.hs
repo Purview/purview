@@ -36,4 +36,4 @@ testAnalyse img = task "Analysis" 3 $ do
     step
     panic "critical"
   step
-  task "Long thing" 20 $ forM_ [1..(20 :: Int)] $ const step
+  task "Long thing" 100 $ forM_ [1..(99 :: Int)] $ const step

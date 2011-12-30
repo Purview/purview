@@ -1,6 +1,8 @@
 
 import Prelude hiding (putStrLn)
 
+import Control.Concurrent
+
 import Control.Monad
 import Control.Monad.Progress
 import Control.Monad.Writer
@@ -75,9 +77,7 @@ doAnalysis analyserName fileName =
     Nothing       -> putErrLn "There is no such analyser installed"
     Just analyser -> do
       image <- Image.readImage fileName
-      hHideCursor stderr
       runAnalysis mempty $ Analyser.analyse analyser image
-      hShowCursor stderr
   where
     maybeAnalyser = findAnalyser analyserName
 
@@ -85,9 +85,10 @@ runAnalysis :: Report.Report -> Analyser.Analysis () -> IO ()
 runAnalysis currReport analysis =
   case result of
     Left (cont, stack) -> do
-      renderTaskStack stack
+      whenLoud $ renderTaskStack stack
+      threadDelay 1000000
       runAnalysis report cont
-    Right () -> do
+    Right () -> whenLoud $ do
       hClearFromCursorToScreenEnd stderr
       putStrLn "Done."
   where
@@ -96,22 +97,32 @@ runAnalysis currReport analysis =
 
 renderTaskStack :: TaskStack Text -> IO ()
 renderTaskStack stackRev = do
-  forM_ stack renderTask
+  hHideCursor stderr
+  when currentIsNew $ do
+    putErrLn . renderNewTask numberOfTasks $ curr
+    hClearFromCursorToScreenEnd stderr
+  forM_ stack $ putErrLn . renderTask
   hClearFromCursorToScreenEnd stderr
   replicateM_ numberOfTasks moveUpTwice
+  hShowCursor stderr
   where
+    curr = head stackRev
+    currentIsNew = taskStep curr == 0
     stack = reverse stackRev
     numberOfTasks = length stack
     moveUpTwice = hCursorUpLine stderr 2
 
-renderTask :: Task Text -> IO ()
-renderTask t = do
-  putErrLn . taskLabel $ t
-  putErrLn . makeProgress $ t
+renderNewTask :: Int -> Task Text -> Text
+renderNewTask level t =
+  Text.replicate level "-" <> "> " <> taskLabel t
+
+renderTask :: Task Text -> Text
+renderTask t =
+  taskLabel t <> "\n" <> makeProgress t
 
 makeProgress :: Task a -> Text
 makeProgress t =
-  "[" `Text.append` bar `Text.append` "]"
+  "[" <> bar <> "]"
   where
     ratio =
       (fromIntegral . taskStep $ t) /
@@ -120,10 +131,13 @@ makeProgress t =
     restElemCount = 78 - barElemCount
     barElems = Text.replicate barElemCount "="
     restElems = Text.replicate restElemCount " "
-    bar = barElems `Text.append` restElems
+    bar = barElems <> restElems
 
 putErrLn :: Text -> IO ()
 putErrLn = hPutStrLn stderr
+
+(<>) :: Monoid m => m -> m -> m
+(<>) = mappend
 
 makeModes :: String -> Annotate Ann
 makeModes pname =
@@ -154,3 +168,4 @@ makeModes pname =
   ]
   += program pname
   += summary (pname ++ " v0.1")
+  += verbosity
