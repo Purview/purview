@@ -4,6 +4,7 @@ import qualified Data.Array.Repa as Repa
 import qualified Data.Colour.SRGB as Colour
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Generic.Mutable as M
+import Data.Word
 import Data.Vector.Unboxed.Base
 
 data RGBA n =
@@ -14,6 +15,18 @@ data RGBA n =
   , channelAlpha :: !n
   }
   deriving (Show, Eq)
+
+class ChannelElem a where
+  channelEmpty :: a
+  channelFull :: a
+
+instance ChannelElem Word8 where
+  channelEmpty = 0
+  channelFull = 255
+
+instance ChannelElem Float where
+  channelEmpty = 0
+  channelFull = 1
 
 toSRGB :: RGBA n -> Colour.RGB n
 toSRGB (RGBA r g b _) = Colour.RGB r g b
