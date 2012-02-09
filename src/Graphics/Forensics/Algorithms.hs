@@ -78,10 +78,10 @@ fragmentize :: (Repa.Elt a, Num a) =>
                OutOfRangeMode a -> DIM2 -> Repa.Array DIM2 a
                -> Repa.Array DIM4 a
 fragmentize (Clamp) kSh image @ (Repa.Array iSh _) =
-  Repa.traverse image (shapeConv kSh) (gen Repa.outClamp iSh kSh)
+  image `Repa.deepSeqArray` Repa.traverse $ image (shapeConv kSh) (gen Repa.outClamp iSh kSh)
 fragmentize (Value x) kSh image @ (Repa.Array iSh _) =
-  Repa.traverse image (shapeConv kSh) (gen (Repa.outAs x) iSh kSh)
-fragmentize (Function _) _ _ = undefined
+  image `Repa.deepSeqArray` Repa.traverse $ image (shapeConv kSh) (gen (Repa.outAs x) iSh kSh)
+fragmentize (Function _) _ _ = undefined --TODO
 
 shapeConv :: DIM2 -> DIM2 -> DIM4
 shapeConv (Z :. x3 :. x4) sh = sh :. x3 :. x4
@@ -108,7 +108,7 @@ gen getOut imgSh @(_ :. iH :. iW)
 fragmentMap :: (Repa.Elt a, Num a, Repa.Elt b) => ((Repa.Array DIM2 a) -> b) ->
                Repa.Array DIM4 a -> Repa.Array DIM2 b
 fragmentMap f array =
-  Repa.traverse array newSh traverseFunc
+  array `Repa.deepSeqArray` $ Repa.traverse $ array newSh traverseFunc
   where
     newSh (Z :. x1 :. x2 :. _ :. _) =
       (Z :. x1 :. x2)

@@ -27,23 +27,28 @@ luminanceGradient :: ByteImage -> ByteImage
 luminanceGradient = floatToByteImage .
                     fragmentMap gradient .
                     fragmentize Clamp (Z :. 3 :. 3) .
-                    Repa.map rgbaToGrayscale .
+                    grayscaleImage .
                     byteToFloatImage
+
+grayscaleImage :: ByteImage -> Repa.Array DIM2 Float
+grayscaleImage a = a `Repa.deepSeqArray` Repa.map rgbaToGrayscale
 
 rgbaToGrayscale :: RGBA Float -> Float
 rgbaToGrayscale (RGBA r g b _) =
   0.2126 * r + 0.7152 * g + 0.0722 * b
 
 gradient ::  Repa.Array DIM2 Float -> RGBA Float
-gradient array =
-  RGBA r g b 1.0
+gradient array = array `Repa.deepSeqArray` gradient' $ array
   where
-    lx    = sum $ zipWith (*) (Repa.toList array) sobelX
-    ly    = sum $ zipWith (*) (Repa.toList array) sobelY
-    angle = atan2 ly lx
-    r     = (- sin angle) / 2.0 + 0.5
-    g     = (- cos angle) / 2.0 + 0.5
-    b     = sqrt (lx * lx + ly * ly)
+    gradient' array =
+      RGBA r g b 1.0
+      where
+        lx    = sum $ zipWith (*) (Repa.toList array) sobelX
+        ly    = sum $ zipWith (*) (Repa.toList array) sobelY
+        angle = atan2 ly lx
+        r     = (- sin angle) / 2.0 + 0.5
+        g     = (- cos angle) / 2.0 + 0.5
+        b     = sqrt (lx * lx + ly * ly)
 
 lgAnalyse :: ByteImage -> Analysis ()
 lgAnalyse = reportInfo "Luminance gradient mapped image" .
