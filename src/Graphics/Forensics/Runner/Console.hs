@@ -21,6 +21,9 @@ import System.Console.CmdArgs.Implicit
 import System.Environment as Environment
 import System.IO (stderr)
 
+import qualified Data.Set as Set
+import Graphics.Forensics.Report
+
 data RunMode =
   ModeAnalyse
   { modeAnalyser    :: String
@@ -87,6 +90,9 @@ runAnalysis currReport analysis =
       runAnalysis report cont
     Right () -> whenLoud $ do
       hClearFromCursorToScreenEnd stderr
+      let reportList = Set.toList report
+          img = head [i | ReportEntry {reportData = ReportImage i} <- reportList]
+      Image.writeImage "~/OUTPUTTEST.png" img
       putStrLn "Done."
   where
     (result, newReport) = runWriter . runProgressT $ analysis
