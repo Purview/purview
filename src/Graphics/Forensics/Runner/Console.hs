@@ -90,13 +90,29 @@ runAnalysis currReport analysis =
       runAnalysis report cont
     Right () -> whenLoud $ do
       hClearFromCursorToScreenEnd stderr
-      let reportList = Set.toList report
-          img = head [i | ReportEntry {reportData = ReportImage i} <- reportList]
-      Image.writeImage "~/OUTPUTTEST.png" img
-      putStrLn "Done."
+      saveReport report
+      putErrLn "Done."
   where
     (result, newReport) = runWriter . runProgressT $ analysis
     report = currReport `mappend` newReport
+
+saveReport :: Report -> IO ()
+saveReport = mapM_ processReportEntry . Set.toList
+
+processReportEntry :: ReportEntry -> IO ()
+processReportEntry (ReportEntry level message dat) = do
+  putStrLn "Report processed"
+  putStrLn . Text.append "Level: " . Text.pack . show $ level
+  putStrLn . Text.append "Message: " $ message
+  saveReportData dat
+
+saveReportData :: ReportData -> IO ()
+saveReportData (ReportNothing) =
+  return ()
+saveReportData (ReportImage i) =
+  Image.writeImage "output.png" i
+saveReportData _ =
+  undefined
 
 renderTaskStack :: TaskStack Text -> IO ()
 renderTaskStack stackRev = do
