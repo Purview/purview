@@ -53,7 +53,7 @@ dft1d m a
     forward _ = False
 
 -- | Applies the discrete fourier transform to a 2-dimensional array.
--- If any of the array dimensions is a power of 2, 
+-- If any of the array dimensions is a power of 2,
 -- fast fourier transform is used instead of naive DFT.
 dft2d :: DFT.Mode -> Repa.Array DIM2 Complex -> Repa.Array DIM2 Complex
 dft2d m a
@@ -86,7 +86,8 @@ fragmentize (Value x) kSh image @ (Repa.Array iSh _) =
 fragmentize (Function _) _ _ = undefined
 
 shapeConv :: DIM2 -> DIM2 -> DIM4
-shapeConv (Z :. x3 :. x4) sh = sh :. x3 :. x4
+shapeConv (Z :. x3 :. x4) sh =
+  sh :. x3 :. x4
 
 gen :: (Repa.Elt a) => Repa.GetOut a -> DIM2 -> DIM2 ->
        (DIM2 -> a) -> DIM4 -> a
