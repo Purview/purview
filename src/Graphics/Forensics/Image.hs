@@ -44,11 +44,11 @@ writeImage = (. splitChannels) . writeChannels
 
 -- | Converts a 128-bit floating point color image to a 32-bit color image
 floatToByteImage :: Image Float -> Image Word8
-floatToByteImage = Repa.map $ mapColor floatToByte
+floatToByteImage = Repa.force . Repa.map (mapColor floatToByte)
 
 -- | Converts a 32-bit color image to a 128-bit floating point color image
 byteToFloatImage :: Image Word8 -> Image Float
-byteToFloatImage = Repa.map $ mapColor byteToFloat
+byteToFloatImage = Repa.force . Repa.map (mapColor byteToFloat)
 
 -- | Separates an image into a 3D array, where the first two
 -- coordinates specify the pixel coordinate, and the third coordinate

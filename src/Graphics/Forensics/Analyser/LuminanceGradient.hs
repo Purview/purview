@@ -27,23 +27,37 @@ luminanceGradient :: ByteImage -> ByteImage
 luminanceGradient = floatToByteImage .
                     fragmentMap gradient .
                     fragmentize Clamp (Z :. 3 :. 3) .
-                    Repa.map rgbaToGrayscale .
+                    grayscaleImage .
                     byteToFloatImage
 
+fragmentizeImage
+
+grayscaleImage :: FloatImage -> Repa.Array DIM2 Float
+grayscaleImage = Repa.force . Repa.map rgbaToGrayscale
+
+{- INLINE rgbaToGrayscale -}
 rgbaToGrayscale :: RGBA Float -> Float
 rgbaToGrayscale (RGBA r g b _) =
   0.2126 * r + 0.7152 * g + 0.0722 * b
 
 gradient ::  Repa.Array DIM2 Float -> RGBA Float
 gradient array =
-  array `Repa.deepSeqArray` RGBA r g b 1.0
+  RGBA r g b 1.0
   where
-    lx    = sum $ zipWith (*) (Repa.toList array) sobelX
-    ly    = sum $ zipWith (*) (Repa.toList array) sobelY
+    lx    = convolve (Repa.toList array) sobelX
+    ly    = convolve (Repa.toList array) sobelY
     angle = atan2 ly lx
-    r     = (- sin angle) / 2.0 + 0.5
-    g     = (- cos angle) / 2.0 + 0.5
-    b     = sqrt (lx * lx + ly * ly)
+    r     = getR angle
+    g     = getG angle
+    b     = modulus lx ly
+    {- INLINE modulus -}
+    modulus a b = sqrt (a * a + b * b)
+    {- INLINE convolve -}
+    convolve = sum . zipWith (*)
+    {- INLINE getR -}
+    getR  = (0.5 +) . (/ 2) . negate . sin
+    {- INLINE getG -}
+    getG  = (0.5 +) . (/ 2) . negate . cos
 
 lgAnalyse :: ByteImage -> Analysis ()
 lgAnalyse = reportInfo "Luminance gradient mapped image" .
