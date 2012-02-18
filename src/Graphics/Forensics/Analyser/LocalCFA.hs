@@ -1,11 +1,15 @@
 module Graphics.Forensics.Analyser.LocalCFA where
 
-import Control.Monad
-
+import Data.List
+import Graphics.Forensics.Algorithms
 import Graphics.Forensics.Analyser
+import Graphics.Forensics.Color
 import Graphics.Forensics.Image
 import Graphics.Forensics.Report
-import Graphics.Forensics.Shape
+import Data.Array.Repa (Z(..),  DIM2, (:.)(..))
+import qualified Data.Array.Repa as Repa
+import Data.Array.Repa.Algorithms.Complex
+import GHC.Float
 
 analyser :: Analyser ByteImage
 analyser =
@@ -18,11 +22,15 @@ analyser =
 
 localcfa :: ByteImage -> ByteImage
 localcfa = floatToByteImage .
-           fragmentMap $
-           getDFT .
-           map variance .
-           getDiagonals .
-           Repa.toList
+           Repa.map returnGrayscale .
+           fragmentMap (
+             getPeakValue .
+             normalise .
+             sort .
+             dftMagnitude .
+             map variance .
+             getDiagonals 32 .
+             Repa.toList) .
            fragmentize Clamp (Z :. 32 :. 32).
            applyHighpassFilter .
            extractGreen .
@@ -30,7 +38,7 @@ localcfa = floatToByteImage .
 
 highpassFilter :: Repa.Array DIM2 Float
 highpassFilter =
-  Repa.fromList (Z :. 3 : 3) [0, 1, 0, 1, -4, 1, 0, 1, 0]
+  Repa.fromList (Z :. 3 :. 3) [0, 1, 0, 1, -4, 1, 0, 1, 0]
 
 applyHighpassFilter :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 applyHighpassFilter = convolve Clamp highpassFilter
@@ -39,18 +47,38 @@ applyHighpassFilter = convolve Clamp highpassFilter
 getG :: RGBA Float -> Float
 getG (RGBA _ g _ _) = g
 
+{- INLINE returnGrayscale -}
+returnGrayscale :: Float -> RGBA Float
+returnGrayscale l = RGBA l l l 1.0
+
 extractGreen :: FloatImage -> Repa.Array DIM2 Float
 extractGreen = Repa.force . Repa.map getG
 
-getDFT :: [Float] -> [Float]
-getDFT = dft1d Forward . map realToComplex
+{- INLINE floatMagnitude -}
+floatMagnitude :: Complex -> Float
+floatMagnitude (r, c) =
+  sqrt (fr * fr + fc * fc)
+  where
+    fr = double2Float r
+    fc = double2Float c
 
-getDiagonals :: Float -> [Float] -> [[Float]]
+dftMagnitude :: [Float] -> [Float]
+dftMagnitude a =
+  map floatMagnitude .
+  Repa.toList .
+  dft1d Forward .
+  Repa.fromList (Z :. (length a) ) .
+  map realToComplex $ a
+
+getDiagonals :: Int -> [Float] -> [[Float]]
 getDiagonals fragmentSize array = do
   size <- [0..fragmentSize]
-  return getDiagonalValues fragmentSize (drop size array)
+  return $
+    take (fragmentSize - size) .
+    getDiagonalValues fragmentSize $
+    (drop size array)
 
-getDiagonalValues :: Float -> [Float] -> [Float]
+getDiagonalValues :: Int -> [Float] -> [Float]
 --PRE: Array is quadratic
 getDiagonalValues fragmentSize array =
   every (fragmentSize + 1) array
@@ -61,7 +89,23 @@ getDiagonalValues fragmentSize array =
 
 variance :: [Float] -> Float
 variance a =
-  (fromIntegral $ sum a) / (fromIntegral $ length a)
+  (sum a) / (fromIntegral $ length a)
+
+normalise :: [Float] -> [Float]
+normalise list =
+  map (/ median) (tail list)
+  where
+    median = list !! ((length list) `div` 2)
+
+getPeakValue :: [Float] -> Float
+getPeakValue list =
+  peak / maxVal
+  where
+    peak    = maximum . take 3 . drop (mid - 1) $ list
+    mid     = length list `div` 2
+    maxVal  = maximum list
 
 localCFAAnalyse :: ByteImage -> Analysis ()
-localCFAAnalyse = undefined
+localCFAAnalyse = reportInfo "Local CFA peak size mapped image" .
+                  reportImage .
+                  localcfa
