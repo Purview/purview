@@ -21,38 +21,43 @@ analyser =
   }
 
 localcfa :: ByteImage -> ByteImage
-localcfa = floatToByteImage .
-           Repa.map returnGrayscale .
-           fragmentMap (
-             getPeakValue .
-             normalise .
-             sort .
-             dftMagnitude .
-             map variance .
-             getDiagonals 32 .
-             Repa.toList) .
-           fragmentize Clamp (Z :. 32 :. 32).
-           applyHighpassFilter .
-           extractGreen .
-           byteToFloatImage
+localcfa =
+  floatToByteImage .
+  Repa.map returnGrayscale .
+  fragmentMap (
+    getPeakValue .
+    normalise .
+    sort .
+    dftMagnitude .
+    map variance .
+    getDiagonals 32 .
+    Repa.toList) .
+  fragmentize Clamp (Z :. 32 :. 32).
+  applyHighpassFilter .
+  extractGreen .
+  byteToFloatImage
 
 highpassFilter :: Repa.Array DIM2 Float
 highpassFilter =
   Repa.fromList (Z :. 3 :. 3) [0, 1, 0, 1, -4, 1, 0, 1, 0]
 
 applyHighpassFilter :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
-applyHighpassFilter = convolve Clamp highpassFilter
+applyHighpassFilter =
+  convolve Clamp highpassFilter
 
 {- INLINE getG -}
 getG :: RGBA Float -> Float
-getG (RGBA _ g _ _) = g
+getG (RGBA _ g _ _) =
+  g
 
 {- INLINE returnGrayscale -}
 returnGrayscale :: Float -> RGBA Float
-returnGrayscale l = RGBA l l l 1.0
+returnGrayscale a =
+  RGBA a a a 1.0
 
 extractGreen :: FloatImage -> Repa.Array DIM2 Float
-extractGreen = Repa.force . Repa.map getG
+extractGreen =
+  Repa.force . Repa.map getG
 
 {- INLINE floatMagnitude -}
 floatMagnitude :: Complex -> Float
@@ -78,8 +83,8 @@ getDiagonals fragmentSize array = do
     getDiagonalValues fragmentSize $
     (drop size array)
 
-getDiagonalValues :: Int -> [Float] -> [Float]
 --PRE: Array is quadratic
+getDiagonalValues :: Int -> [Float] -> [Float]
 getDiagonalValues fragmentSize array =
   every (fragmentSize + 1) array
   where
@@ -106,6 +111,7 @@ getPeakValue list =
     maxVal  = maximum list
 
 localCFAAnalyse :: ByteImage -> Analysis ()
-localCFAAnalyse = reportInfo "Local CFA peak size mapped image" .
-                  reportImage .
-                  localcfa
+localCFAAnalyse =
+  reportInfo "Local CFA peak size mapped image" .
+  reportImage .
+  localcfa
