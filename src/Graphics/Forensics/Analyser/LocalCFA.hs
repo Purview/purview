@@ -1,6 +1,7 @@
 module Graphics.Forensics.Analyser.LocalCFA where
 
 import Data.List
+import GHC.Float
 import Graphics.Forensics.Algorithms
 import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
@@ -9,7 +10,6 @@ import Graphics.Forensics.Report
 import Data.Array.Repa (Z(..),  DIM2, (:.)(..))
 import qualified Data.Array.Repa as Repa
 import Data.Array.Repa.Algorithms.Complex
-import GHC.Float
 
 analyser :: Analyser ByteImage
 analyser =
@@ -27,7 +27,6 @@ localcfa =
   fragmentMap (
     getPeakValue .
     normalise .
-    sort .
     dftMagnitude .
     map variance .
     getDiagonals 32 .
@@ -48,7 +47,7 @@ applyHighpassFilter =
 {- INLINE getG -}
 getG :: RGBA Float -> Float
 getG (RGBA _ g _ _) =
-  g
+  g * 255
 
 {- INLINE returnGrayscale -}
 returnGrayscale :: Float -> RGBA Float
@@ -79,7 +78,7 @@ getDiagonals :: Int -> [Float] -> [[Float]]
 getDiagonals fragmentSize array = do
   size <- [0..fragmentSize]
   return $
-    take (fragmentSize - size) .
+    take (fragmentSize - 2 * size) .
     getDiagonalValues fragmentSize $
     (drop size array)
 
@@ -94,21 +93,22 @@ getDiagonalValues fragmentSize array =
 
 variance :: [Float] -> Float
 variance a =
-  (sum a) / (fromIntegral $ length a)
+  (sum a) / (genericLength a)
 
 normalise :: [Float] -> [Float]
 normalise list =
   map (/ median) (tail list)
   where
-    median = list !! ((length list) `div` 2)
+    median = sorted !! ((length list) `div` 2)
+    sorted = sort list
 
 getPeakValue :: [Float] -> Float
 getPeakValue list =
   peak / maxVal
   where
-    peak    = maximum . take 3 . drop (mid - 1) $ list
-    mid     = length list `div` 2
-    maxVal  = maximum list
+    peak   = maximum . take 3 . drop (mid - 1) $ list
+    mid    = length list `div` 2
+    maxVal = maximum list
 
 localCFAAnalyse :: ByteImage -> Analysis ()
 localCFAAnalyse =

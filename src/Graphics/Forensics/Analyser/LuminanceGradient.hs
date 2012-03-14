@@ -35,18 +35,6 @@ luminanceGradient img =
     (gX, gY)  = grayscale `Repa.deepSeqArray` gradients $ grayscale
     lgImage   = Repa.force2 $ Repa.zipWith gradientColour gX gY
 
-{- luminanceGradient img = do
-  let grayscale = grayscaleImage . byteToFloatImage $ img
-  grayscale `Repa.deepSeqArray` ()
-
-  let (gX, gY) = gradients grayscale
-  Repa.deepSeqArrays [gX, gY] ()
-
-  let lgImage = Repa.force2 $ Repa.zipWith gradientColour gX gY
-  Repa.deepSeqArray lgImage () -}
-
-
-
 gradients :: Repa.Array DIM2 Float ->
              (Repa.Array DIM2 Float, Repa.Array DIM2 Float)
 gradients =
