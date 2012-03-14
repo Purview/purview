@@ -62,6 +62,7 @@ Library
     FunctionalDependencies,
     MultiParamTypeClasses,
     OverloadedStrings,
+    QuasiQuotes,
     ScopedTypeVariables,
     TypeFamilies,
     TypeOperators
