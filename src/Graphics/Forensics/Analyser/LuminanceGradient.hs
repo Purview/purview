@@ -45,7 +45,7 @@ gradients =
 grayscaleImage :: FloatImage -> Repa.Array DIM2 Float
 grayscaleImage =
   Repa.withManifest $ \i ->
-  Repa.force2 $ Repa.traverse i id (\get ix -> rgbaToGrayscale $ get ix)
+  Repa.force2 $ Repa.map rgbaToGrayscale i
 
 {-# INLINE rgbaToGrayscale #-}
 rgbaToGrayscale :: RGBA Float -> Float
