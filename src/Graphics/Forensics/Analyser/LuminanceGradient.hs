@@ -41,13 +41,13 @@ gradients =
   Repa.withManifest $ \i ->
   let (gX, gY) = (edgeX i, edgeY i) in Repa.deepSeqArrays [gX, gY] (gX, gY)
 
-{- NOINLINE grayscaleImage -}
+{-# NOINLINE grayscaleImage #-}
 grayscaleImage :: FloatImage -> Repa.Array DIM2 Float
 grayscaleImage =
   Repa.withManifest $ \i ->
   Repa.force2 $ Repa.traverse i id (\get ix -> rgbaToGrayscale $ get ix)
 
-{- INLINE rgbaToGrayscale -}
+{-# INLINE rgbaToGrayscale #-}
 rgbaToGrayscale :: RGBA Float -> Float
 rgbaToGrayscale (RGBA r g b _) =
   0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -63,7 +63,7 @@ edgeY :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 edgeY img =
   Repa.deepSeqArray img $ (Repa.force2 $ mapStencil2 BoundClamp sobelY img)
 
-
+{-# INLINE gradientColour #-}
 gradientColour ::  Float -> Float -> RGBA Float
 gradientColour gx gy =
   RGBA r g b 1.0
