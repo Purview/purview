@@ -57,7 +57,6 @@ edgeX :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 edgeX img =
   Repa.deepSeqArray img $ (Repa.force2 $ mapStencil2 BoundClamp sobelX img)
 
-
 {-# NOINLINE edgeY #-}
 edgeY :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 edgeY img =
