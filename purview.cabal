@@ -88,6 +88,7 @@ Library
     Graphics.Forensics.Analysers,
 
     Graphics.Forensics.Analyser.Test,
+    Graphics.Forensics.Analyser.Demosaic,
     Graphics.Forensics.Analyser.LuminanceGradient,
     Graphics.Forensics.Analyser.LocalCFA
 

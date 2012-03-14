@@ -44,12 +44,12 @@ applyHighpassFilter :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 applyHighpassFilter =
   convolve Clamp highpassFilter
 
-{- INLINE getG -}
+{-# INLINE getG #-}
 getG :: RGBA Float -> Float
 getG (RGBA _ g _ _) =
   g * 255
 
-{- INLINE returnGrayscale -}
+{-# INLINE returnGrayscale #-}
 returnGrayscale :: Float -> RGBA Float
 returnGrayscale a =
   RGBA a a a 1.0
@@ -58,7 +58,7 @@ extractGreen :: FloatImage -> Repa.Array DIM2 Float
 extractGreen =
   Repa.force . Repa.map getG
 
-{- INLINE floatMagnitude -}
+{-# INLINE floatMagnitude #-}
 floatMagnitude :: Complex -> Float
 floatMagnitude (r, c) =
   sqrt (fr * fr + fc * fc)
