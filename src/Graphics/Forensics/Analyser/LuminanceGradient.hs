@@ -1,18 +1,22 @@
 module Graphics.Forensics.Analyser.LuminanceGradient where
 
 import Graphics.Forensics.Analyser
-import Graphics.Forensics.Algorithms
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image
 import Graphics.Forensics.Report
-import Data.Array.Repa (Z(..), DIM2, (:.)(..))
+import Data.Array.Repa (DIM2, (:.)(..))
 import qualified Data.Array.Repa as Repa
+import Data.Array.Repa.Stencil
 
-sobelX :: [Float]
-sobelX = [-1, 0, 1, -2, 0, 2, -1, 0, 1]
+sobelX :: Stencil DIM2 Float
+sobelX = [stencil2| -1 0 1
+                    -2 0 2
+                    -1 0 1 |]
 
-sobelY :: [Float]
-sobelY = [1, 2, 1, 0, 0, 0, -1, -2, -1]
+sobelY :: Stencil DIM2 Float
+sobelY = [stencil2| -1 -2 -1
+                     0  0  0
+                     1  2  1 |]
 
 analyser :: Analyser ByteImage
 analyser =
@@ -24,34 +28,64 @@ analyser =
   }
 
 luminanceGradient :: ByteImage -> ByteImage
-luminanceGradient = floatToByteImage .
-                    fragmentMap gradient .
-                    fragmentize Clamp (Z :. 3 :. 3) .
-                    grayscaleImage .
-                    byteToFloatImage
+luminanceGradient img =
+  lgImage `Repa.deepSeqArray` floatToByteImage $ lgImage
+  where
+    grayscale = grayscaleImage . byteToFloatImage $ img
+    (gX, gY)  = grayscale `Repa.deepSeqArray` gradients $ grayscale
+    lgImage   = Repa.force2 $ Repa.zipWith gradientColour gX gY
 
+{- luminanceGradient img = do
+  let grayscale = grayscaleImage . byteToFloatImage $ img
+  grayscale `Repa.deepSeqArray` ()
+
+  let (gX, gY) = gradients grayscale
+  Repa.deepSeqArrays [gX, gY] ()
+
+  let lgImage = Repa.force2 $ Repa.zipWith gradientColour gX gY
+  Repa.deepSeqArray lgImage () -}
+
+
+
+gradients :: Repa.Array DIM2 Float ->
+             (Repa.Array DIM2 Float, Repa.Array DIM2 Float)
+gradients =
+  Repa.withManifest $ \i ->
+  let (gX, gY) = (edgeX i, edgeY i) in Repa.deepSeqArrays [gX, gY] (gX, gY)
+
+{- NOINLINE grayscaleImage -}
 grayscaleImage :: FloatImage -> Repa.Array DIM2 Float
-grayscaleImage = Repa.force . Repa.map rgbaToGrayscale
+grayscaleImage =
+  Repa.withManifest $ \i ->
+  Repa.force2 $ Repa.traverse i id (\get ix -> rgbaToGrayscale $ get ix)
 
 {- INLINE rgbaToGrayscale -}
 rgbaToGrayscale :: RGBA Float -> Float
 rgbaToGrayscale (RGBA r g b _) =
   0.2126 * r + 0.7152 * g + 0.0722 * b
 
-gradient ::  Repa.Array DIM2 Float -> RGBA Float
-gradient array =
+{-# NOINLINE edgeX #-}
+edgeX :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
+edgeX img =
+  Repa.deepSeqArray img $ (Repa.force2 $ mapStencil2 BoundClamp sobelX img)
+
+
+{-# NOINLINE edgeY #-}
+edgeY :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
+edgeY img =
+  Repa.deepSeqArray img $ (Repa.force2 $ mapStencil2 BoundClamp sobelY img)
+
+
+gradientColour ::  Float -> Float -> RGBA Float
+gradientColour gx gy =
   RGBA r g b 1.0
   where
-    lx    = dotP (Repa.toList array) sobelX
-    ly    = dotP (Repa.toList array) sobelY
-    angle = atan2 ly lx
+    angle = atan2 gy gx
     r     = getR angle
     g     = getG angle
-    b     = modulus lx ly
+    b     = modulus gx gy
     {- INLINE modulus -}
     modulus x y = sqrt (x * x + y * y)
-    {- INLINE dotP -}
-    dotP = (sum .) . zipWith (*)
     {- INLINE getR -}
     getR = (0.5 +) . (/ 2) . negate . sin
     {- INLINE getG -}
