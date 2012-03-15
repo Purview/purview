@@ -23,33 +23,20 @@ analyser =
   }
 
 demosaic :: ByteImage -> ByteImage
-demosaic img =
-  dmImage `Repa.deepSeqArray` floatToByteImage $ dmImage
-  where
-    dmImage  = normalise $ Repa.force2 filtered
-    filtered = highpassFilter . byteToFloatImage $ img
-
-normalise :: FloatImage -> FloatImage
-normalise img =
-  Repa.force $ Repa.map (liftRGBA (flip (/)) maxValue) img
-  where
-    maxValue = Repa.foldAll (liftRGBA max) (RGBA 0 0 0 0) img
-
-liftRGBA :: (a -> b -> c) -> RGBA a -> RGBA b -> RGBA c
-liftRGBA f (RGBA r1 g1 b1 a1) (RGBA r2 g2 b2 a2) =
-  RGBA (f r1 r2) (f g1 g2) (f b1 b2) (f a1 a2)
+demosaic =
+  floatToByteImage .
+  highpassFilter .
+  byteToFloatImage
 
 {-# NOINLINE highpassFilter #-}
 highpassFilter :: FloatImage -> FloatImage
 highpassFilter img =
-  Repa.deepSeqArray merged merged
+  mergeArrays3 r g b returnRGBA
   where
-    merged = r `Repa.deepSeqArray` g `Repa.deepSeqArray`
-             b `Repa.deepSeqArray` (mergeArrays3 r g b) $ returnRGBA
     r      = hp . imap getR $ img
     g      = hp . imap getG $ img
     b      = hp . imap getB $ img
-    hp arr = Repa.force2 $ mapStencil2 BoundClamp highpass arr
+    hp arr = mapStencil2 BoundClamp highpass arr
 
 getR :: RGBA Float -> Float
 getR (RGBA r _ _ _) = r
