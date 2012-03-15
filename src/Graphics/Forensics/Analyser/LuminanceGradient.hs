@@ -24,7 +24,7 @@ analyser =
   { analyse = lgAnalyse
   , name = "lg"
   , author = "David Flemström & Moritz Roth"
-  , version = readVersion "0.1"
+  , version = readVersion "1.0"
   }
 
 luminanceGradient :: ByteImage -> ByteImage
@@ -55,12 +55,12 @@ rgbaToGrayscale (RGBA r g b _) =
 {-# NOINLINE edgeX #-}
 edgeX :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 edgeX img =
-  Repa.deepSeqArray img $ (Repa.force2 $ mapStencil2 BoundClamp sobelX img)
+  Repa.deepSeqArray img $ Repa.force2 $ mapStencil2 BoundClamp sobelX img
 
 {-# NOINLINE edgeY #-}
 edgeY :: Repa.Array DIM2 Float -> Repa.Array DIM2 Float
 edgeY img =
-  Repa.deepSeqArray img $ (Repa.force2 $ mapStencil2 BoundClamp sobelY img)
+  Repa.deepSeqArray img $ Repa.force2 $ mapStencil2 BoundClamp sobelY img
 
 {-# INLINE gradientColour #-}
 gradientColour ::  Float -> Float -> RGBA Float
@@ -71,11 +71,11 @@ gradientColour gx gy =
     r     = getR angle
     g     = getG angle
     b     = modulus gx gy
-    {- INLINE modulus -}
+    {-# INLINE modulus #-}
     modulus x y = sqrt (x * x + y * y)
-    {- INLINE getR -}
+    {-# INLINE getR #-}
     getR = (0.5 +) . (/ 2) . negate . sin
-    {- INLINE getG -}
+    {-# INLINE getG #-}
     getG = (0.5 +) . (/ 2) . negate . cos
 
 lgAnalyse :: ByteImage -> Analysis ()
