@@ -58,6 +58,7 @@ Library
 
   Default-extensions:
     BangPatterns,
+    FlexibleContexts,
     FlexibleInstances,
     FunctionalDependencies,
     MultiParamTypeClasses,
@@ -88,9 +89,9 @@ Library
     Graphics.Forensics.Analysers,
 
     Graphics.Forensics.Analyser.Test,
-    Graphics.Forensics.Analyser.Demosaic,
-    Graphics.Forensics.Analyser.LuminanceGradient,
-    Graphics.Forensics.Analyser.LocalCFA
+--    Graphics.Forensics.Analyser.Demosaic,
+    Graphics.Forensics.Analyser.LuminanceGradient
+--    Graphics.Forensics.Analyser.LocalCFA
 
   -- Packages needed in order to build this package.
   Build-depends:

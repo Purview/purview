@@ -27,6 +27,7 @@ import Data.Word
 import TypeLevel.NaturalNumber
 
 import Graphics.Forensics.Array
+import Graphics.Forensics.Utils
 
 -- | A set of 'Channels' is a 3-dimensional array of numbers, where
 -- the array's first two index coordinates specify the pixel, and
@@ -34,14 +35,14 @@ import Graphics.Forensics.Array
 data Channels r n =
   Channels
   { -- | The array storing the channel matrix.
-    channelArray :: Array DIM3 n
+    channelArray :: Array U DIM3 n
   }
   deriving (Show, Eq)
 
 -- | Safely constructs 'Channels' from an array by checking that the
 -- correct number of channels are present.
 makeChannels :: forall n r . (Repa.Elt n, NaturalNumber r)
-                => Array DIM3 n -> Channels r n
+                => Array U DIM3 n -> Channels r n
 makeChannels arr @ (Array (_ :. nr) _) =
   if nr == naturalNumberAsInt (undefined :: r)
   then Channels arr
@@ -50,12 +51,14 @@ makeChannels arr @ (Array (_ :. nr) _) =
 -- | Loads a channel array from a file. Very many image formats are
 -- supported. The channels are guaranteed to be in RGBA format.
 readChannels :: FilePath -> IO (Channels N4 Word8)
-readChannels = fmap makeChannels . Repa.runIL . Repa.readImage
+readChannels path =
+  fmap makeChannels . copyUnboxedP . Repa.runIL . Repa.readImage
 
 -- | Saves the specified 'Channels' array to the specified path.
 -- The image format is inferred from the file suffix.
 writeChannels :: FilePath -> Channels N4 Word8 -> IO ()
-writeChannels = (. channelArray) . fmap Repa.runIL . Repa.writeImage
+writeChannels =
+  (. channelArray) . copyForeignPtrP . fmap Repa.runIL . Repa.writeImage
 
 -- | Converts a 'Float'-based channel array to a 'Word8'-based one.
 floatToByteChannels :: (NaturalNumber r)
