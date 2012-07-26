@@ -15,7 +15,6 @@ module Control.Monad.Progress
        , step
        ) where
 
-import Control.Monad
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.Identity
