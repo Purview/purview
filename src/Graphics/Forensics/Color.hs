@@ -1,6 +1,6 @@
 module Graphics.Forensics.Color where
 
-import qualified Data.Array.Repa as Repa
+import qualified Data.Array.Repa.Eval as Repa
 import qualified Data.Colour.SRGB as Colour
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Generic.Mutable as M
