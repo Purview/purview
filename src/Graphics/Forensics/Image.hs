@@ -15,8 +15,10 @@ module Graphics.Forensics.Image
        , mergeChannels
        ) where
 
-import Data.Array.Repa (Array, DIM2, (:.)(..))
+import Data.Array.Repa (Array(..), DIM2, (:.)(..))
 import qualified Data.Array.Repa as Repa
+import qualified Data.Array.Repa.Eval as Repa
+import Data.Array.Repa.Repr.Unboxed (U, Unbox)
 import Data.Word
 
 import TypeLevel.NaturalNumber
@@ -26,7 +28,7 @@ import Graphics.Forensics.Channels
 import Graphics.Forensics.Color
 
 -- | An 'Image' is a 2-dimensional array of 'RGBA' colors
-type Image n = Array DIM2 (RGBA n)
+type Image n = Array U DIM2 (RGBA n)
 
 type ByteImage = Image Word8
 
@@ -44,18 +46,18 @@ writeImage = (. splitChannels) . writeChannels
 
 -- | Converts a 128-bit floating point color image to a 32-bit color image
 floatToByteImage :: Image Float -> Image Word8
-floatToByteImage = Repa.force . Repa.map (mapColor floatToByte)
+floatToByteImage = Repa.computeS . Repa.map (mapColor floatToByte)
 
 -- | Converts a 32-bit color image to a 128-bit floating point color image
 byteToFloatImage :: Image Word8 -> Image Float
-byteToFloatImage = Repa.force . Repa.map (mapColor byteToFloat)
+byteToFloatImage = Repa.computeS . Repa.map (mapColor byteToFloat)
 
 -- | Separates an image into a 3D array, where the first two
 -- coordinates specify the pixel coordinate, and the third coordinate
 -- specifies the channel index.
-splitChannels :: (Repa.Elt n) => Image n -> Channels N4 n
+splitChannels :: (Unbox n, Repa.Elt n) => Image n -> Channels U N4 n
 splitChannels =
-  makeChannels . flip2 Repa.traverse addChannel writeRGBColor
+  makeChannels . Repa.computeS . flip2 Repa.traverse addChannel writeRGBColor
   where
     {-# INLINE addChannel #-}
     addChannel s = s :. 4
@@ -69,9 +71,9 @@ splitChannels =
     channel _ = undefined
 
 -- | Merges a 3D channel array into an SRGBA color image.
-mergeChannels :: (Repa.Elt n) => Channels N4 n -> Image n
+mergeChannels :: (Unbox n, Repa.Elt n) => Channels U N4 n -> Image n
 mergeChannels =
-  flip2 Repa.traverse dropChannel readRGBColor . channelArray
+  Repa.computeS . flip2 Repa.traverse dropChannel readRGBColor . channelArray
   where
     {-# INLINE dropChannel #-}
     dropChannel (s :. _) = s
