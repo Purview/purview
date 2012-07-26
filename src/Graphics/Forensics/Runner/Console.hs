@@ -1,4 +1,3 @@
-
 import Prelude hiding (putStrLn)
 
 import Control.Monad
@@ -154,9 +153,6 @@ makeProgress t =
 
 putErrLn :: Text -> IO ()
 putErrLn = hPutStrLn stderr
-
-(<>) :: Monoid m => m -> m -> m
-(<>) = mappend
 
 makeModes :: String -> Annotate Ann
 makeModes pname =
