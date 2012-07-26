@@ -7,10 +7,9 @@ module Graphics.Forensics.Algorithms
          Mode(..),
          realToComplex,
          complexRound,
-         dft1d,
-         dft2d,
-         center1d,
-         center2d,
+         DFT.fft1dP,
+         DFT.fft2dP,
+         DFT.fft3dP,
          -- * Fragmentize
          fragmentize,
          fragmentMap
@@ -18,53 +17,24 @@ module Graphics.Forensics.Algorithms
 import Prelude hiding (lookup)
 import qualified Data.Array.Repa.Algorithms.Convolve as Repa
 import qualified Data.Array.Repa.Algorithms.FFT as DFT
-import qualified Data.Array.Repa.Algorithms.DFT as DFT
 import Data.Array.Repa.Algorithms.FFT (Mode(..))
 import Data.Array.Repa.Algorithms.Complex
-import Data.Array.Repa.Algorithms.DFT.Center
-import Data.Array.Repa (Z(..), DIM1, DIM2, DIM4, All(..), (:.)(..))
+import Data.Array.Repa (Array(..), Z(..), DIM2, DIM4, All(..), (:.)(..),
+                        extent, Source(..), D)
+import Data.Array.Repa.Repr.Unboxed (U, Unbox)
 import qualified Data.Array.Repa as Repa
-
-import Graphics.Forensics.Array (sliceArray, glueArrays)
+import qualified Data.Array.Repa.Eval as Repa
 
 -- | Provides the different edge case handling methods for convolution
-data OutOfRangeMode a = Clamp | Value a | Function (DIM2 -> a)
+data OutOfRangeMode a = Clamp | Value a | Function (Repa.GetOut a)
 
 -- | Convolves a matrix using the specified kernel and edge handling method
-convolve :: (Repa.Elt n, Num n) => OutOfRangeMode n -> Repa.Array DIM2 n ->
- Repa.Array DIM2 n -> Repa.Array DIM2 n
-convolve (Clamp)      = Repa.convolveOut Repa.outClamp
-convolve (Value a)    = Repa.convolveOut (Repa.outAs a)
-convolve (Function f) = Repa.convolve f
-
--- | Applies the discrete fourier transform to a 1-dimensional array.
--- If the array size is a power of 2, 
--- fast fourier transform is used instead of naive DFT.
-dft1d :: DFT.Mode -> Repa.Array DIM1 Complex -> Repa.Array DIM1 Complex
-dft1d m a
-  | isPowerOf2 = DFT.fft1d m a
-  | forward m  = DFT.dft a
-  | otherwise  = DFT.idft a
-  where
-    (Z :. x)   = Repa.extent a
-    isPowerOf2 = DFT.isPowerOfTwo x
-    forward Forward = True
-    forward Reverse = True
-    forward _ = False
-
--- | Applies the discrete fourier transform to a 2-dimensional array.
--- If any of the array dimensions is a power of 2,
--- fast fourier transform is used instead of naive DFT.
-dft2d :: DFT.Mode -> Repa.Array DIM2 Complex -> Repa.Array DIM2 Complex
-dft2d m a
-  | isPowerOf2 = DFT.fft2d m a
-  | otherwise  = Repa.transpose .
-                 glueArrays . map (dft1d m) . sliceArray .
-                 Repa.transpose .
-                 glueArrays . map (dft1d m) . sliceArray $ a
-  where
-    (Z :. x :. y) = Repa.extent a
-    isPowerOf2    = all DFT.isPowerOfTwo [x, y]
+convolve :: (Unbox n, Num n, Monad m) =>
+            OutOfRangeMode n -> Array U DIM2 n ->
+            Array U DIM2 n -> m (Array U DIM2 n)
+convolve (Clamp)      = Repa.convolveOutP Repa.outClamp
+convolve (Value a)    = Repa.convolveOutP $ Repa.outAs a
+convolve (Function f) = Repa.convolveOutP f
 
 realToComplex :: (Real a) => a -> Complex
 realToComplex x =
@@ -74,14 +44,14 @@ complexRound :: Complex -> Complex
 complexRound (a, b) =
   (fromInteger $ round a, fromInteger $ round b)
 
-fragmentize :: (Repa.Elt a, Num a) =>
-               OutOfRangeMode a -> DIM2 -> Repa.Array DIM2 a
-               -> Repa.Array DIM4 a
-fragmentize (Clamp) kSh image @ (Repa.Array iSh _) =
-  image `Repa.deepSeqArray` Repa.force $
+fragmentize :: (Repa.Elt a, Num a, Repa.Source rep a) =>
+               OutOfRangeMode a -> DIM2 -> Array rep DIM2 a
+               -> Array D DIM4 a
+fragmentize (Clamp) kSh image =
+  let iSh = extent image in
   Repa.traverse image (shapeConv kSh) (gen Repa.outClamp iSh kSh)
-fragmentize (Value x) kSh image @ (Repa.Array iSh _) =
-  image `Repa.deepSeqArray` Repa.force $
+fragmentize (Value x) kSh image =
+  let iSh = extent image in
   Repa.traverse image (shapeConv kSh) (gen (Repa.outAs x) iSh kSh)
 fragmentize (Function _) _ _ = undefined
 
@@ -108,10 +78,10 @@ gen getOut imgSh @(_ :. iH :. iW)
       | j > borderD = getOut lookup imgSh ix
       | otherwise   = lookup ix
 
-fragmentMap :: (Repa.Elt a, Num a, Repa.Elt b) => ((Repa.Array DIM2 a) -> b) ->
-               Repa.Array DIM4 a -> Repa.Array DIM2 b
+fragmentMap :: (Repa.Elt a, Num a, Repa.Elt b, Source r1 a) =>
+               ((Repa.Array D DIM2 a) -> b) ->
+               Repa.Array r1 DIM4 a -> Repa.Array D DIM2 b
 fragmentMap f array =
-  array `Repa.deepSeqArray` Repa.force $
   Repa.traverse array newSh traverseFunc
   where
     newSh (Z :. x1 :. x2 :. _ :. _) =
