@@ -1,6 +1,7 @@
 module Graphics.Forensics.Analyser.Demosaic where
 
 import Prelude hiding (zipWith3)
+import Graphics.Forensics.Algorithms
 import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image
@@ -8,8 +9,6 @@ import Graphics.Forensics.Report
 import Graphics.Forensics.Utilities (zipWith3)
 import Data.Array.Repa (Array(..), DIM2, (:.)(..), Source(..), computeP)
 import qualified Data.Array.Repa as Repa
-import Data.Array.Repa.Stencil
-import Data.Array.Repa.Stencil.Dim2
 import Data.Array.Repa.Repr.Unboxed (U)
 
 highpass :: Stencil DIM2 Float
@@ -31,13 +30,10 @@ demosaic img = do
   hpf <- highpassFilter . byteToFloatImage $ img
   return (floatToByteImage hpf)
 
-conv :: (Source r1 Float, Monad m) =>
-        Array r1 DIM2 Float -> m (Array PC5 DIM2 Float)
-conv = return . mapStencil2 BoundClamp highpass
-
 {-# NOINLINE highpassFilter #-}
 highpassFilter :: (Monad m) => FloatImage -> m (FloatImage)
 highpassFilter img = do
+  let conv = return . convolveS Clamp highpass
   r <- getR img >>= conv
   g <- getG img >>= conv
   b <- getB img >>= conv

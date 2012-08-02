@@ -1,30 +1,39 @@
 -- | Provides algorithms to manipulate matrices
 module Graphics.Forensics.Algorithms
        ( -- * Convolution
-         OutOfRangeMode(..),
-         convolve,
+         OutOfRangeMode(..)
+       , convolve
+       , convolveS
+       , stencil2
+       , makeStencil2
+       , Stencil (..)
          -- * Discrete Fourier Transform
-         Mode(..),
-         realToComplex,
-         complexRound,
-         DFT.fft1dP,
-         DFT.fft2dP,
-         DFT.fft3dP,
+       , Mode(..)
+       , realToComplex
+       , complexRound
+       , DFT.fft1dP
+       , DFT.fft2dP
+       , DFT.fft3dP
          -- * Fragmentize
-         fragmentize,
-         fragmentMap
+       , fragmentize
+       , fragmentMap
        ) where
 
 import Prelude hiding (lookup)
+
 import qualified Data.Array.Repa.Algorithms.Convolve as Repa
 import qualified Data.Array.Repa.Algorithms.FFT as DFT
 import Data.Array.Repa.Algorithms.FFT (Mode(..))
 import Data.Array.Repa.Algorithms.Complex
+
 import Data.Array.Repa (Array(..), Z(..), DIM2, DIM4, All(..), (:.)(..),
                         extent, Source(..), D)
 import Data.Array.Repa.Repr.Unboxed (U, Unbox)
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.Eval as Repa
+
+import Data.Array.Repa.Stencil
+import Data.Array.Repa.Stencil.Dim2
 
 -- | Provides the different edge case handling methods for convolution
 data OutOfRangeMode a = Clamp | Value a | Function (Repa.GetOut a)
@@ -36,6 +45,13 @@ convolve :: (Unbox n, Num n, Monad m) =>
 convolve (Clamp)      = Repa.convolveOutP Repa.outClamp
 convolve (Value a)    = Repa.convolveOutP $ Repa.outAs a
 convolve (Function f) = Repa.convolveOutP f
+
+-- | Convolves a matrix using Repa's built in stencil functions
+convolveS :: (Source r1 a) => OutOfRangeMode a ->
+             Stencil DIM2 a -> Array r1 DIM2 a -> Array PC5 DIM2 a
+convolveS (Clamp)      = mapStencil2 BoundClamp
+convolveS (Value a)    = mapStencil2 (BoundConst a)
+convolveS (Function _) = undefined
 
 realToComplex :: (Real a) => a -> Complex
 realToComplex x =
