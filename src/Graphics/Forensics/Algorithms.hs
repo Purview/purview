@@ -14,6 +14,7 @@ module Graphics.Forensics.Algorithms
          fragmentize,
          fragmentMap
        ) where
+
 import Prelude hiding (lookup)
 import qualified Data.Array.Repa.Algorithms.Convolve as Repa
 import qualified Data.Array.Repa.Algorithms.FFT as DFT

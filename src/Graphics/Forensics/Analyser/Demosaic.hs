@@ -5,9 +5,12 @@ import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image
 import Graphics.Forensics.Report
-import Data.Array.Repa (DIM2, (:.)(..))
+import Graphics.Forensics.Utilities (zipWith3)
+import Data.Array.Repa (Array(..), DIM2, (:.)(..), Source(..), computeP)
 import qualified Data.Array.Repa as Repa
 import Data.Array.Repa.Stencil
+import Data.Array.Repa.Stencil.Dim2
+import Data.Array.Repa.Repr.Unboxed (U)
 
 highpass :: Stencil DIM2 Float
 highpass = [stencil2| 0  1  0
@@ -23,49 +26,33 @@ analyser =
   , version = readVersion "0.1"
   }
 
-demosaic :: ByteImage -> ByteImage
-demosaic =
-  floatToByteImage .
-  highpassFilter .
-  byteToFloatImage
+demosaic :: (Monad m) => ByteImage -> m (ByteImage)
+demosaic img = do
+  hpf <- highpassFilter . byteToFloatImage $ img
+  return (floatToByteImage hpf)
+
+conv :: (Source r1 Float, Monad m) =>
+        Array r1 DIM2 Float -> m (Array PC5 DIM2 Float)
+conv = return . mapStencil2 BoundClamp highpass
 
 {-# NOINLINE highpassFilter #-}
-highpassFilter :: FloatImage -> FloatImage
-highpassFilter img =
-  zipWith3 returnRGBA r g b
-  where
-    r      = hp . imap getR $ img
-    g      = hp . imap getG $ img
-    b      = hp . imap getB $ img
-    hp arr = mapStencil2 BoundClamp highpass arr
+highpassFilter :: (Monad m) => FloatImage -> m (FloatImage)
+highpassFilter img = do
+  r <- getR img >>= conv
+  g <- getG img >>= conv
+  b <- getB img >>= conv
+  Repa.computeP $ zipWith3 fromRGBValues r g b
 
-getR :: RGBA Float -> Float
-getR (RGBA r _ _ _) = r
+getR :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
+getR i = computeP $ Repa.map (\(RGBA r _ _ _) -> r) i
 
-getG :: RGBA Float -> Float
-getG (RGBA _ g _ _) = g
+getG :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
+getG i = computeP $ Repa.map (\(RGBA _ g _ _) -> g) i
 
-getB :: RGBA Float -> Float
-getB (RGBA _ _ b _) = b
-
-imap :: (Repa.Elt a, Repa.Elt b) =>
-        (a -> b) -> Repa.Array DIM2 a -> Repa.Array DIM2 b
-imap f =
-  Repa.withManifest $ \arr -> Repa.force2 $ Repa.map f arr
-
-zipWith3 :: (Repa.Elt a, Repa.Elt b, Repa.Elt c, Repa.Elt d) =>
-            (a -> b -> c -> d) ->
-            Repa.Array DIM2 a -> Repa.Array DIM2 b -> Repa.Array DIM2 c ->
-            Repa.Array DIM2 d
-zipWith3 f a1 a2 a3 =
-  Repa.force2 $ Repa.traverse3 a1 a2 a3 (\sh _ _ -> sh) $
-  (\get1 get2 get3 ix -> f (get1 ix) (get2 ix) (get3 ix))
-
-returnRGBA :: Float -> Float -> Float -> RGBA Float
-returnRGBA r g b =
-  (RGBA r g b 1.0)
+getB :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
+getB i = computeP $ Repa.map (\(RGBA _ _ b _) -> b) i
 
 demosaicAnalyse :: ByteImage -> Analysis ()
-demosaicAnalyse = reportInfo "Image demosaic analysis" .
-            reportImage .
-            demosaic
+demosaicAnalyse img = do
+  result <- demosaic img
+  reportInfo "Image demosaic analysis" $ reportImage result
