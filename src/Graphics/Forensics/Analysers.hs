@@ -5,11 +5,11 @@ import Graphics.Forensics.Image
 import Graphics.Forensics.Analyser.LuminanceGradient as LG
 import Graphics.Forensics.Analyser.Test as Test
 --import Graphics.Forensics.Analyser.LocalCFA as LCFA
---import Graphics.Forensics.Analyser.Demosaic as DM
+import Graphics.Forensics.Analyser.Demosaic as DM
 analysers :: [Analyser ByteImage]
 analysers =
   [ Test.analyser,
-    LG.analyser
+    LG.analyser,
 --    LCFA.analyser,
---    DM.analyser
+    DM.analyser
   ]
