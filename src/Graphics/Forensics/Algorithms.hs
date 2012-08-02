@@ -6,6 +6,7 @@ module Graphics.Forensics.Algorithms
        , convolveS
        , stencil2
        , makeStencil2
+       , PC5
        , Stencil (..)
          -- * Discrete Fourier Transform
        , Mode(..)
