@@ -8,6 +8,7 @@ import Data.List
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Text.IO
+import Data.Time
 import Data.Version
 
 import qualified Graphics.Forensics.Analysers as Analysers
@@ -19,6 +20,7 @@ import System.Console.ANSI
 import System.Console.CmdArgs.Implicit
 import System.Environment as Environment
 import System.IO (stderr)
+import System.Locale
 
 import qualified Data.Set as Set
 import Graphics.Forensics.Report
@@ -108,10 +110,16 @@ processReportEntry (ReportEntry level message dat) = do
 saveReportData :: ReportData -> IO ()
 saveReportData (ReportNothing) =
   return ()
-saveReportData (ReportImage i) =
-  Image.writeImage "output.png" i
+saveReportData (ReportImage i) = do
+  timestamp <- getTime
+  Image.writeImage (timestamp ++ "output.png") i
 saveReportData _ =
   undefined
+
+getTime :: IO (String)
+getTime =
+  liftM2 utcToLocalTime getCurrentTimeZone getCurrentTime >>=
+  return . formatTime defaultTimeLocale "%y%m%d-%H%M%S"
 
 renderTaskStack :: TaskStack Text -> IO ()
 renderTaskStack stackRev = do
