@@ -37,6 +37,9 @@ fromTransparentSRGB = fromSRGBAlpha 0
 fromSRGBAlpha :: n -> Colour.RGB n -> RGBA n
 fromSRGBAlpha a (Colour.RGB r g b) = RGBA r g b a
 
+fromRGBValues :: (Num n) => n -> n -> n -> RGBA n
+fromRGBValues r g b = RGBA r g b 1
+
 instance Repa.Elt a => Repa.Elt (RGBA a) where
   {-# INLINE touch #-}
   touch (RGBA r g b a) = do
