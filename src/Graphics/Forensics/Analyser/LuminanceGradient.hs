@@ -4,21 +4,19 @@ import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image
 import Graphics.Forensics.Report
-import Data.Array.Repa (Array(..), Z(..), DIM2, (:.)(..), Source(..), D)
+import Data.Array.Repa (Array(..), DIM2, (:.)(..), Source(..), D)
 import qualified Data.Array.Repa as Repa
 import Data.Array.Repa.Repr.Unboxed (U)
 
-sobelX :: Array U DIM2 Float
---sobelX = [stencil2| -1 0 1
---                    -2 0 2
---                    -1 0 1 |]
-sobelX = Repa.fromListUnboxed (Z :. 3 :. 3) [-1, 0, 1, -2, 0, 2, -1, 0, 1]
+sobelX :: Stencil DIM2 Float
+sobelX = [stencil2| -1 0 1
+                    -2 0 2
+                    -1 0 1 |]
 
-sobelY :: Array U DIM2 Float
---sobelY = [stencil2| -1 -2 -1
---                     0  0  0
---                     1  2  1 |]
-sobelY = Repa.fromListUnboxed (Z :. 3 :. 3) [-1, -2, -1, 0, 0, 0, 1, 2, 1]
+sobelY :: Stencil DIM2 Float
+sobelY = [stencil2| -1 -2 -1
+                     0  0  0
+                     1  2  1 |]
 
 analyser :: Analyser ByteImage
 analyser =
@@ -37,11 +35,12 @@ luminanceGradient img = do
   return (floatToByteImage lgImage)
 
 gradients :: (Monad m) => Array U DIM2 Float ->
-             m ((Array U DIM2 Float, Array U DIM2 Float))
-gradients i = do
-  gX <- edgeX i
-  gY <- edgeY i
+             m ((Array PC5 DIM2 Float, Array PC5 DIM2 Float))
+gradients i =
   return (gX, gY)
+  where
+    gX = edgeX i
+    gY = edgeY i
 
 {-# NOINLINE grayscaleImage #-}
 grayscaleImage :: FloatImage -> Array D DIM2 Float
@@ -54,14 +53,14 @@ rgbaToGrayscale (RGBA r g b _) =
   0.2126 * r + 0.7152 * g + 0.0722 * b
 
 {-# NOINLINE edgeX #-}
-edgeX :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
+edgeX :: Array U DIM2 Float -> Array PC5 DIM2 Float
 edgeX =
-  convolve Clamp sobelX
+  convolveS Clamp sobelX
 
 {-# NOINLINE edgeY #-}
-edgeY :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
+edgeY :: Array U DIM2 Float -> Array PC5 DIM2 Float
 edgeY =
-  convolve Clamp sobelY
+  convolveS Clamp sobelY
 
 {-# INLINE gradientColour #-}
 gradientColour ::  Float -> Float -> RGBA Float
