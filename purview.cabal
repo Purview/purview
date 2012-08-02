@@ -85,11 +85,12 @@ Library
     Graphics.Forensics.Image,
     Graphics.Forensics.Report,
     Graphics.Forensics.Shape,
+    Graphics.Forensics.Utilities,
 
     Graphics.Forensics.Analysers,
 
     Graphics.Forensics.Analyser.Test,
---    Graphics.Forensics.Analyser.Demosaic,
+    Graphics.Forensics.Analyser.Demosaic,
     Graphics.Forensics.Analyser.LuminanceGradient
 --    Graphics.Forensics.Analyser.LocalCFA
 
@@ -138,8 +139,10 @@ Executable purview-console
     containers                  == 0.4.*,
     cmdargs                     == 0.9.*,
     mtl                         == 2.0.*,
+    old-locale                  == 1.0.*,
     purview                     == 0.1.*,
-    text                        == 0.11.*
+    text                        == 0.11.*,
+    time                        == 1.4.*
 
 Test-suite test-purview
   Type:
