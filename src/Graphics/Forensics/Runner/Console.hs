@@ -112,7 +112,7 @@ saveReportData (ReportNothing) =
   return ()
 saveReportData (ReportImage i) = do
   timestamp <- getTime
-  Image.writeImage (timestamp ++ "output.png") i
+  Image.writeImage ("output-" ++ timestamp ++ ".png") i
 saveReportData _ =
   undefined
 
