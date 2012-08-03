@@ -13,9 +13,10 @@ module Graphics.Forensics.Image
          -- ** Conversion
        , splitChannels
        , mergeChannels
+       , toGrayscaleImage
        ) where
 
-import Data.Array.Repa (Array(..), DIM2, (:.)(..))
+import Data.Array.Repa (Array(..), DIM2, (:.)(..), D)
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.Eval as Repa
 import Data.Array.Repa.Repr.Unboxed (U, Unbox)
@@ -51,6 +52,10 @@ floatToByteImage = Repa.computeS . Repa.map (mapColor floatToByte)
 -- | Converts a 32-bit color image to a 128-bit floating point color image
 byteToFloatImage :: Image Word8 -> Image Float
 byteToFloatImage = Repa.computeS . Repa.map (mapColor byteToFloat)
+
+-- | Converts an RGBA image to grayscale
+toGrayscaleImage :: (Unbox n, Real n) => n -> Image n -> Array D DIM2 Float
+toGrayscaleImage m = Repa.map (rgbaToGrayscale m)
 
 -- | Separates an image into a 3D array, where the first two
 -- coordinates specify the pixel coordinate, and the third coordinate

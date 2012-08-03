@@ -40,6 +40,13 @@ fromSRGBAlpha a (Colour.RGB r g b) = RGBA r g b a
 fromRGBValues :: (Num n) => n -> n -> n -> RGBA n
 fromRGBValues r g b = RGBA r g b 1
 
+{-# INLINE rgbaToGrayscale #-}
+rgbaToGrayscale :: (Real n) => n -> RGBA n -> Float
+rgbaToGrayscale m (RGBA r g b _) =
+  0.2126 * (realToFrac r / realToFrac m) +
+  0.7152 * (realToFrac g / realToFrac m) +
+  0.0722 * (realToFrac b / realToFrac m)
+
 instance Repa.Elt a => Repa.Elt (RGBA a) where
   {-# INLINE touch #-}
   touch (RGBA r g b a) = do
