@@ -78,6 +78,7 @@ Library
   Exposed-modules:
     Control.Monad.Progress,
     Graphics.Forensics.Algorithms,
+    Graphics.Forensics.Algorithms.DFT,
     Graphics.Forensics.Analyser,
     Graphics.Forensics.Array,
     Graphics.Forensics.Channels,
@@ -91,8 +92,8 @@ Library
 
     Graphics.Forensics.Analyser.Test,
     Graphics.Forensics.Analyser.Demosaic,
-    Graphics.Forensics.Analyser.LuminanceGradient
---    Graphics.Forensics.Analyser.LocalCFA
+    Graphics.Forensics.Analyser.LuminanceGradient,
+    Graphics.Forensics.Analyser.LocalCFA
 
   -- Packages needed in order to build this package.
   Build-depends:

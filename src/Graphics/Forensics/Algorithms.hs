@@ -9,32 +9,41 @@ module Graphics.Forensics.Algorithms
        , PC5
        , Stencil (..)
          -- * Discrete Fourier Transform
-       , Mode(..)
+       , idftP
+       , idftS
+       , dftP
+       , dftS
+       , calcRootsOfUnityP
+       , calcRootsOfUnityS
+       , calcInverseRootsOfUnityP
+       , calcInverseRootsOfUnityS
+       , fft1dP
+       , fft2dP
+       , fft3dP
+       , Mode (..)
        , realToComplex
        , complexRound
-       , DFT.fft1dP
-       , DFT.fft2dP
-       , DFT.fft3dP
          -- * Fragmentize
-       , fragmentize
        , fragmentMap
+         -- * Normalization
+       , scaleArray
+       , normalize
        ) where
 
 import Prelude hiding (lookup)
 
 import qualified Data.Array.Repa.Algorithms.Convolve as Repa
-import qualified Data.Array.Repa.Algorithms.FFT as DFT
-import Data.Array.Repa.Algorithms.FFT (Mode(..))
-import Data.Array.Repa.Algorithms.Complex
 
-import Data.Array.Repa (Array(..), Z(..), DIM2, DIM4, All(..), (:.)(..),
-                        extent, Source(..), D)
+import Data.Array.Repa (Array(..), Z(..), DIM2, (:.)(..),
+                        Source(..), D, Shape(..), (!))
 import Data.Array.Repa.Repr.Unboxed (U, Unbox)
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.Eval as Repa
 
 import Data.Array.Repa.Stencil
 import Data.Array.Repa.Stencil.Dim2
+
+import Graphics.Forensics.Algorithms.DFT
 
 -- | Provides the different edge case handling methods for convolution
 data OutOfRangeMode a = Clamp | Value a | Function (Repa.GetOut a)
@@ -54,55 +63,42 @@ convolveS (Clamp)      = mapStencil2 BoundClamp
 convolveS (Value a)    = mapStencil2 (BoundConst a)
 convolveS (Function _) = undefined
 
-realToComplex :: (Real a) => a -> Complex
-realToComplex x =
-  (realToFrac x, 0.0)
-
-complexRound :: Complex -> Complex
-complexRound (a, b) =
-  (fromInteger $ round a, fromInteger $ round b)
-
-fragmentize :: (Repa.Elt a, Num a, Repa.Source rep a) =>
-               OutOfRangeMode a -> DIM2 -> Array rep DIM2 a
-               -> Array D DIM4 a
-fragmentize (Clamp) kSh image =
-  let iSh = extent image in
-  Repa.traverse image (shapeConv kSh) (gen Repa.outClamp iSh kSh)
-fragmentize (Value x) kSh image =
-  let iSh = extent image in
-  Repa.traverse image (shapeConv kSh) (gen (Repa.outAs x) iSh kSh)
-fragmentize (Function _) _ _ = undefined
-
-shapeConv :: DIM2 -> DIM2 -> DIM4
-shapeConv (Z :. x3 :. x4) sh =
-  sh :. x3 :. x4
-
-gen :: (Repa.Elt a) => Repa.GetOut a -> DIM2 -> DIM2 ->
-       (DIM2 -> a) -> DIM4 -> a
-gen getOut imgSh @(_ :. iH :. iW)
-  (_ :. kH :. kW) lookup (Z :. x :. y :. kx :. ky) =
-  lookup' (Z :. (x - kH2 + kx) :. (y - kW2 + ky))
-  where
-    !kH2 = kH `div` 2
-    !kW2 = kW `div` 2
-    !borderL = kW2
-    !borderR = iW  - kW2  - 1
-    !borderU = kH2
-    !borderD = iH - kH2 - 1
-    lookup'  ix @ (_ :. j :. i)
-      | i < borderL = getOut lookup imgSh ix
-      | i > borderR = getOut lookup imgSh ix
-      | j < borderU = getOut lookup imgSh ix
-      | j > borderD = getOut lookup imgSh ix
-      | otherwise   = lookup ix
-
-fragmentMap :: (Repa.Elt a, Num a, Repa.Elt b, Source r1 a) =>
-               ((Repa.Array D DIM2 a) -> b) ->
-               Repa.Array r1 DIM4 a -> Repa.Array D DIM2 b
-fragmentMap f array =
+-- | Splits the image into NxM overlapping fragments, then maps a
+--   function over each fragment to return a new 2D array
+fragmentMap :: (Repa.Elt a, Num a, Repa.Elt b, Unbox a, Unbox b,
+                Source r1 a) =>
+               ((Repa.Array D DIM2 a) -> b) -> DIM2 ->
+               Repa.Array r1 DIM2 a -> Repa.Array D DIM2 b
+fragmentMap f fragmentSize array =
   Repa.traverse array newSh traverseFunc
   where
-    newSh (Z :. x1 :. x2 :. _ :. _) =
-      (Z :. x1 :. x2)
+    (Z :. sx :. sy) =
+      fragmentSize
+    newSh (Z :. x :. y) =
+      (Z :. x - sx :. y - sy)
     traverseFunc _ ix =
-      f $ Repa.slice array (ix :. All :. All)
+      f $ getArrayFragment fragmentSize ix array
+
+getArrayFragment :: (Source r1 e) => DIM2 -> DIM2 ->
+                    Repa.Array r1 DIM2 e -> Repa.Array D DIM2 e
+getArrayFragment s (Z :. offsetX :. offsetY) arr =
+  Repa.fromFunction s (applyOffset)
+  where
+    applyOffset (Z :. ix :. iy) = arr ! (Z :. ix + offsetX :. iy + offsetY)
+
+scaleArray :: (Source r1 e, Shape sh, Real e) =>
+              e -> e -> e -> e ->
+             Repa.Array r1 sh e -> Repa.Array D sh Float
+scaleArray oMin oMax scMin scMax image =
+  Repa.map norm image
+  where
+    norm value = (realToFrac (value - oMin) / realToFrac oMax) *
+                 realToFrac scMax + realToFrac scMin
+
+normalize :: (Source r1 e, Shape sh, Real e) =>
+             Repa.Array r1 sh e -> Repa.Array D sh Float
+normalize a =
+  scaleArray aMin aMax 0 1 a
+  where
+    aMin = minimum $ Repa.toList a
+    aMax = maximum $ Repa.toList a
