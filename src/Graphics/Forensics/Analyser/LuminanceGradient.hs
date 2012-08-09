@@ -4,7 +4,7 @@ import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image
 import Graphics.Forensics.Report
-import Data.Array.Repa (Array(..), DIM2, (:.)(..), Source(..))
+import Data.Array.Repa (Array(..), DIM2, (:.)(..), Source(..), computeP)
 import qualified Data.Array.Repa as Repa
 import Data.Array.Repa.Repr.Unboxed (U)
 
@@ -29,18 +29,19 @@ analyser =
 
 luminanceGradient :: (Monad m) => ByteImage -> m (ByteImage)
 luminanceGradient img = do
-  grayscale <- Repa.computeP $ toGrayscaleImage 255 img
-  let (gX, gY) = (edgeX grayscale, edgeY grayscale)
-  lgImage <- Repa.computeP $ Repa.zipWith gradientColour gX gY
+  grayscale <- computeP $ toGrayscaleImage 255 img
+  gX <- edgeX grayscale
+  gY <- edgeY grayscale
+  lgImage <- computeP $ Repa.zipWith gradientColour gX gY
   return (floatToByteImage lgImage)
 
 {-# NOINLINE edgeX #-}
-edgeX :: Array U DIM2 Float -> Array PC5 DIM2 Float
-edgeX = convolveS Clamp sobelX
+edgeX :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
+edgeX a = computeP $ convolveS Clamp sobelX a
 
 {-# NOINLINE edgeY #-}
-edgeY :: Array U DIM2 Float -> Array PC5 DIM2 Float
-edgeY = convolveS Clamp sobelY
+edgeY :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
+edgeY a = computeP $ convolveS Clamp sobelY a
 
 {-# INLINE gradientColour #-}
 gradientColour ::  Float -> Float -> RGBA Float

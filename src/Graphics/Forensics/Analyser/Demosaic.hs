@@ -1,6 +1,7 @@
 module Graphics.Forensics.Analyser.Demosaic where
 
 import Prelude hiding (zipWith3)
+
 import Graphics.Forensics.Algorithms
 import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
