@@ -40,6 +40,9 @@ fromSRGBAlpha a (Colour.RGB r g b) = RGBA r g b a
 fromRGBValues :: (Num n) => n -> n -> n -> RGBA n
 fromRGBValues r g b = RGBA r g b 1
 
+fromGrayscaleFloat :: Float -> RGBA Float
+fromGrayscaleFloat f = RGBA f f f 1.0
+
 {-# INLINE rgbaToGrayscale #-}
 rgbaToGrayscale :: (Real n) => n -> RGBA n -> Float
 rgbaToGrayscale m (RGBA r g b _) =
