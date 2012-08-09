@@ -17,5 +17,5 @@ tramp
 *.un~
 Thumbs.db
 Desktop.ini
-output.png
+output-*.png
 
