@@ -35,9 +35,9 @@ demosaic img = do
 highpassFilter :: (Monad m) => FloatImage -> m (FloatImage)
 highpassFilter img = do
   let conv = return . convolveS Clamp highpass
-  r <- getR img >>= conv
-  g <- getG img >>= conv
-  b <- getB img >>= conv
+  r <- conv =<< getR img
+  g <- conv =<< getG img
+  b <- conv =<< getB img
   Repa.computeP $ zipWith3 fromRGBValues r g b
 
 getR :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
