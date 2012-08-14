@@ -19,12 +19,11 @@ module Graphics.Forensics.Channels
        , removeAlphaChannel
        ) where
 
-import Data.Array.Repa (Array(..), DIM3, (:.)(..), extent, Source(..), D)
+import Data.Array.Repa (Array(..), DIM3, (:.)(..), Source(..), D)
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.Eval as Repa
 import qualified Data.Array.Repa.IO.DevIL as Repa
 import Data.Array.Repa.Repr.Unboxed (U, Unbox)
-import Data.Array.Repa.Repr.ForeignPtr (F)
 import Data.Word
 
 import TypeLevel.NaturalNumber
@@ -45,7 +44,7 @@ channelArray (Channels a) = a
 makeChannels :: forall n r . (Repa.Elt n, NaturalNumber r) => Repa.Source rep n
                 => Array rep DIM3 n -> Channels rep r n
 makeChannels arr =
-  let (_ :. nr) = extent arr in
+  let (_ :. nr) = Repa.extent arr in
   if nr == naturalNumberAsInt (undefined :: r)
   then Channels arr
   else error "Array extent doesn't match requested channel count"
@@ -55,14 +54,13 @@ makeChannels arr =
 readChannels :: FilePath -> IO (Channels U N4 Word8)
 readChannels path = do
   image <- Repa.runIL $ Repa.readImage path
-  let imgArray = imageArray image
-  unboxed <- Repa.copyP imgArray
-  return (makeChannels unboxed)
+  imgArray <- imageArray image
+  return (makeChannels imgArray)
 
-imageArray :: Repa.Image -> Repa.Array F DIM3 Word8
-imageArray (Repa.RGBA img) = img
-imageArray (Repa.RGB img) = img
-imageArray (Repa.Grey _) = undefined
+imageArray :: (Monad m) => Repa.Image -> m (Repa.Array U DIM3 Word8)
+imageArray (Repa.RGBA img) = Repa.copyP img
+imageArray (Repa.RGB img) = addAlphaToArray 255 img
+imageArray _ = undefined
 
 -- | Saves the specified 'Channels' array to the specified path.
 -- The image format is inferred from the file suffix.
@@ -119,6 +117,19 @@ addAlphaChannel value =
     {-# INLINE setAlpha #-}
     setAlpha _    (_ :. 3) = value
     setAlpha look coord    = look coord
+
+addAlphaToArray :: (Unbox n, Monad m, Repa.Source r1 n) => n ->
+                   Repa.Array r1 DIM3 n -> m (Repa.Array U DIM3 n)
+addAlphaToArray value array =
+  Repa.computeP $ Repa.traverse array incrChannel setAlpha
+  where
+    {-# INLINE incrChannel #-}
+    incrChannel (ds :. 3) = ds :. 4
+    incrChannel sh        = sh
+    {-# INLINE setAlpha #-}
+    setAlpha _    (_ :. 3) = value
+    setAlpha look coord    = look coord
+
 
 -- | Checks whether the 'Channels' contain an alpha channel.
 hasAlphaChannel :: forall n r . (Unbox n, NaturalNumber r) => Repa.Source U n
