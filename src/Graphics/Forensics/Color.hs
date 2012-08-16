@@ -7,6 +7,8 @@ import qualified Data.Vector.Generic.Mutable as M
 import Data.Word
 import Data.Vector.Unboxed.Base
 
+import Data.Array.Repa.Algorithms.ColorRamp
+
 data RGBA n =
   RGBA
   { channelRed   :: !n
@@ -49,6 +51,18 @@ rgbaToGrayscale m (RGBA r g b _) =
   0.2126 * (realToFrac r / realToFrac m) +
   0.7152 * (realToFrac g / realToFrac m) +
   0.0722 * (realToFrac b / realToFrac m)
+
+heatmapColor ::  forall a. (Ord a, Floating a) =>
+                    a -> a -> a -> RGBA a
+heatmapColor vmin vmax val =
+  RGBA r g b vmax
+  where
+    (r, g, b) = rampColorHotToCold vmin vmax val
+
+inverseHeatmapColor :: forall a. (Ord a, Floating a) =>
+                       a -> a -> a -> RGBA a
+inverseHeatmapColor vmin vmax val =
+  heatmapColor vmin vmax (vmax - (val - vmin))
 
 instance Repa.Elt a => Repa.Elt (RGBA a) where
   {-# INLINE touch #-}
