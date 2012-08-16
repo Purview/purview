@@ -57,7 +57,7 @@ outOfRangeModeFunction (Function f) = f
 convolve :: (Unbox n, Num n, Monad m) =>
             OutOfRangeMode n -> Array U DIM2 n ->
             Array U DIM2 n -> m (Array U DIM2 n)
-convolve mode = Repa.convolveOutP (outOfRangeModeFunction mode)
+convolve mode = Repa.convolveOutP $ outOfRangeModeFunction mode
 
 -- | Convolves a matrix using Repa's built in stencil functions
 convolveS :: (Source r1 a) => OutOfRangeMode a ->
@@ -97,7 +97,7 @@ extendArray fragmentSize array =
 getArrayFragment :: (Source r1 e) => DIM2 -> DIM2 ->
                     Repa.Array r1 DIM2 e -> Repa.Array D DIM2 e
 getArrayFragment s (Z :. offsetX :. offsetY) arr =
-  Repa.fromFunction s (applyOffset)
+  Repa.fromFunction s applyOffset
   where
     applyOffset (Z :. ix :. iy) = arr ! (Z :. ix + offsetX :. iy + offsetY)
 
