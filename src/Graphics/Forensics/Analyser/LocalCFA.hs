@@ -23,7 +23,7 @@ analyser =
   }
 
 localcfa :: (Monad m) => ByteImage -> m ByteImage
-localcfa img = do
+localcfa !img = do
   hpf <- highpassFilter . byteToFloatImage $ img
   let fragments = fragmentMap localAnalysis (Z :. 32 :. 32) hpf
   filtered <- computeUnboxedP fragments
@@ -36,13 +36,13 @@ highpass = [stencil2| 0  1  0
                       0  1  0 |]
 
 highpassFilter :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
-highpassFilter i = do
+highpassFilter !i = do
   let conv = return . convolveS Clamp highpass
   greenChannel <- computeUnboxedP $ Repa.map ((* 255) . channelGreen) i
   computeP =<< conv greenChannel
 
 localAnalysis :: Array D DIM2 Float -> Float
-localAnalysis a =
+localAnalysis !a =
   getPeakValue . normalise $ magnitudes
   where
     diags = getDiagonalVariances a
@@ -65,9 +65,10 @@ dftMagnitude a =
     dftc = dftS list
 
 -- | Returns the variances of all diagonals in the given array as a list
+{-# INLINE getDiagonalVariances  #-}
 getDiagonalVariances :: (Source r1 Float) =>
                        Array r1 DIM2 Float -> [Float]
-getDiagonalVariances arr =
+getDiagonalVariances !arr =
   map variance $ getDiagonals (w + h - 1)
   where
     (Z :. w :. h) = extent arr
@@ -81,11 +82,13 @@ getDiagonalVariances arr =
       | x - n > w = getDiagonalAt x $ n + 1
       | otherwise = arr ! (Z :. x - n :. n) : getDiagonalAt x (n + 1)
 
+{-# INLINE variance  #-}
 variance :: [Float] -> Float
 variance a =
   let (s, l) = foldl' (\(su, le) n -> (su + n, le + 1)) (0, 0) a in
   s / l
 
+{-# INLINE normalise #-}
 normalise :: [Float] -> [Float]
 normalise list =
   map (/ median) (tail list)
@@ -93,6 +96,7 @@ normalise list =
     median = sorted !! ((length list) `div` 2)
     sorted = sort list
 
+{-# INLINE getPeakValue #-}
 getPeakValue :: [Float] -> Float
 getPeakValue list =
   peak / maxVal

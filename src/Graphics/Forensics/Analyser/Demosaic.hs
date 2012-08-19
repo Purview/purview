@@ -31,7 +31,7 @@ demosaic = liftM floatToByteImage . highpassFilter . byteToFloatImage
 
 {-# NOINLINE highpassFilter #-}
 highpassFilter :: (Monad m) => FloatImage -> m (FloatImage)
-highpassFilter img = do
+highpassFilter !img = do
   let conv = return . convolveS Clamp highpass
   let rmap = computeUnboxedP . flip Repa.map img
   r <- conv =<< rmap channelRed

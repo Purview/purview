@@ -28,7 +28,7 @@ analyser =
   }
 
 luminanceGradient :: (Monad m) => ByteImage -> m (ByteImage)
-luminanceGradient img = do
+luminanceGradient !img = do
   grayscale <- computeP $ toGrayscaleImage 255 img
   gX <- edgeX grayscale
   gY <- edgeY grayscale
@@ -37,11 +37,11 @@ luminanceGradient img = do
 
 {-# NOINLINE edgeX #-}
 edgeX :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
-edgeX a = computeP $ convolveS Clamp sobelX a
+edgeX !a = computeP $ convolveS Clamp sobelX a
 
 {-# NOINLINE edgeY #-}
 edgeY :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
-edgeY a = computeP $ convolveS Clamp sobelY a
+edgeY !a = computeP $ convolveS Clamp sobelY a
 
 {-# INLINE gradientColour #-}
 gradientColour ::  Float -> Float -> RGBA Float
