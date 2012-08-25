@@ -78,6 +78,7 @@ Library
   Exposed-modules:
     Control.Monad.Progress,
     Graphics.Forensics.Algorithms,
+    Graphics.Forensics.Algorithms.Convolve,
     Graphics.Forensics.Algorithms.DFT,
     Graphics.Forensics.Algorithms.Fragmentize,
     Graphics.Forensics.Analyser,
