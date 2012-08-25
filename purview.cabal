@@ -70,6 +70,9 @@ Library
 
   GHC-options:
     -Wall -Werror -ddump-splices -fno-warn-orphans
+    -Odph -rtsopts -threaded
+    -funfolding-use-threshold1000 -funfolding-keeness-factor1000
+    -fllvm -optlo-O3
 
   Hs-source-dirs:
     src
@@ -131,7 +134,7 @@ Executable purview-console
     OverloadedStrings
 
   GHC-options:
-    -Wall -Werror
+    -Wall -Werror -threaded -rtsopts
 
   Main-is:
     src/Graphics/Forensics/Runner/Console.hs
