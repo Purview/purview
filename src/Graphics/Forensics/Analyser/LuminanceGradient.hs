@@ -35,11 +35,11 @@ luminanceGradient !img = do
   lgImage <- computeP $ Repa.zipWith gradientColour gX gY
   return (floatToByteImage lgImage)
 
-{-# NOINLINE edgeX #-}
+{-# INLINE edgeX #-}
 edgeX :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
 edgeX !a = computeP $ convolveS Clamp sobelX a
 
-{-# NOINLINE edgeY #-}
+{-# INLINE edgeY #-}
 edgeY :: (Monad m) => Array U DIM2 Float -> m (Array U DIM2 Float)
 edgeY !a = computeP $ convolveS Clamp sobelY a
 

@@ -8,7 +8,7 @@ import Graphics.Forensics.Color
 import Graphics.Forensics.Image
 import Graphics.Forensics.Report
 import Data.Array.Repa (Source(..), Z(..),  DIM2, (:.)(..), Array(..),
-                        U, D, computeP, computeUnboxedP, (!))
+                        U, D, computeP, computeUnboxedP)
 import qualified Data.Array.Repa as Repa
 import qualified Data.Array.Repa.Eval as Repa
 import Data.Array.Repa.Algorithms.Complex
@@ -80,7 +80,7 @@ getDiagonalVariances !arr =
     getDiagonalAt x n
       | n >= h || x - n < 0 = []
       | x - n > w = getDiagonalAt x $ n + 1
-      | otherwise = arr ! (Z :. x - n :. n) : getDiagonalAt x (n + 1)
+      | otherwise = arr `unsafeIndex` (Z :. x-n :. n) : getDiagonalAt x (n + 1)
 
 {-# INLINE variance  #-}
 variance :: [Float] -> Float
