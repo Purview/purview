@@ -37,9 +37,8 @@ highpass = [stencil2| 0  1  0
 
 highpassFilter :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
 highpassFilter !i = do
-  let conv = return . convolveS Clamp highpass
   greenChannel <- computeUnboxedP $ Repa.map ((* 255) . channelGreen) i
-  computeP =<< conv greenChannel
+  computeP $ convolveS Clamp highpass greenChannel
 
 localAnalysis :: Array D DIM2 Float -> Float
 localAnalysis !a =
@@ -50,7 +49,7 @@ localAnalysis !a =
 
 {-# INLINE floatMagnitude #-}
 floatMagnitude :: Complex -> Float
-floatMagnitude (r, c) =
+floatMagnitude !(r, c) =
   sqrt (fr * fr + fc * fc)
   where
     fr = double2Float r
@@ -58,8 +57,8 @@ floatMagnitude (r, c) =
 
 {-# INLINE dftMagnitude #-}
 dftMagnitude :: [Float] -> [Float]
-dftMagnitude a =
-  map floatMagnitude . Repa.toList $ dftc
+dftMagnitude !a =
+  map floatMagnitude dftc
   where
     list = Repa.fromList (Z :. (length a)) . map realToComplex $ a
     dftc = dftS list
@@ -84,13 +83,13 @@ getDiagonalVariances !arr =
 
 {-# INLINE variance  #-}
 variance :: [Float] -> Float
-variance a =
+variance !a =
   let (s, l) = foldl' (\(su, le) n -> (su + n, le + 1)) (0, 0) a in
   s / l
 
 {-# INLINE normalise #-}
 normalise :: [Float] -> [Float]
-normalise list =
+normalise !list =
   map (/ median) (tail list)
   where
     median = sorted !! ((length list) `div` 2)
@@ -98,7 +97,7 @@ normalise list =
 
 {-# INLINE getPeakValue #-}
 getPeakValue :: [Float] -> Float
-getPeakValue list =
+getPeakValue !list =
   peak / maxVal
   where
     peak = maximum . take 3 . drop (mid - 1) $ list
