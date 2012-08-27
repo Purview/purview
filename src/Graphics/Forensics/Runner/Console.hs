@@ -101,10 +101,8 @@ saveReport :: Report -> IO ()
 saveReport = mapM_ processReportEntry . Set.toList
 
 processReportEntry :: ReportEntry -> IO ()
-processReportEntry (ReportEntry level message dat) = do
-  putStrLn "Report processed"
-  putStrLn . Text.append "Level: " . Text.pack . show $ level
-  putStrLn . Text.append "Message: " $ message
+processReportEntry (ReportEntry _ message dat) = do
+  putStrLn message
   saveReportData dat
 
 saveReportData :: ReportData -> IO ()
@@ -114,7 +112,7 @@ saveReportData (ReportImage i) = do
   timestamp <- getTime
   Image.writeImage ("output/output-" ++ timestamp ++ ".png") i
 saveReportData _ =
-  undefined
+  return ()
 
 getTime :: IO (String)
 getTime =
