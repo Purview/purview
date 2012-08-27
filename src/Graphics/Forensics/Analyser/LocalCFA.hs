@@ -17,8 +17,6 @@ import qualified Data.Vector.Algorithms.Intro as V
 import qualified Data.Vector.Unboxed as V
 import Data.Vector.Unboxed (Vector)
 
-import Control.Monad.ST
-
 analyser :: Analyser ByteImage
 analyser =
   Analyser
@@ -28,18 +26,18 @@ analyser =
   , version = readVersion "0.1"
   }
 
+highpass :: Stencil DIM2 Float
+highpass = [stencil2| 0  1  0
+                      1 -4  1
+                      0  1  0 |]
+
 localcfa :: (Monad m) => ByteImage -> m ByteImage
-localcfa !img = do
+localcfa img = do
   hpf <- highpassFilter . byteToFloatImage $ img
   let fragments = fragmentMap localAnalysis (Z :. 32 :. 32) hpf
   filtered <- computeUnboxedP fragments
   rgbaResult <- computeUnboxedP $ Repa.map fromGrayscaleFloat filtered
   return (floatToByteImage rgbaResult)
-
-highpass :: Stencil DIM2 Float
-highpass = [stencil2| 0  1  0
-                      1 -4  1
-                      0  1  0 |]
 
 highpassFilter :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
 highpassFilter !i = do
@@ -48,10 +46,69 @@ highpassFilter !i = do
 
 localAnalysis :: Array D DIM2 Float -> Float
 localAnalysis !a =
-  getPeakValue . normalise $ magnitudes
+  getPeakValue ix . normalise ix $ magnitudes
   where
+    !ix = len `div` 2
+    !len = V.length diags
+    magnitudes = dftMagnitude len diags
     diags = getDiagonalVariances a
-    magnitudes = dftMagnitude diags
+
+{-# INLINE dftMagnitude #-}
+dftMagnitude :: Int -> Vector Float -> Vector Float
+dftMagnitude len a =
+  V.map floatMagnitude . Repa.toUnboxed $ dftc
+  where
+    dftc = dftS list
+    list = Repa.fromUnboxed (Z :. len) . V.map realToComplex $ a
+
+-- | Returns the variances of all diagonals in the given array as a list
+{-# INLINE getDiagonalVariances  #-}
+getDiagonalVariances :: (Source r1 Float) =>
+                       Array r1 DIM2 Float -> Vector Float
+getDiagonalVariances !arr =
+  getDiagonals $ w + h - 1
+  where
+    (Z :. w :. h) = extent arr
+    {-# INLINE getDiagonals #-}
+    getDiagonals :: Int -> Vector Float
+    getDiagonals s = V.generate s $ variance . getDiagonalAt
+
+    {-# INLINE getDiagonalAt #-}
+    getDiagonalAt :: Int -> Vector Float
+    getDiagonalAt n =
+      V.generate d getFromArray
+      where
+        x0 = min n (w - 1)
+        y0 = max 0 (n - w + 1)
+        xN = max 0 (w - h + y0)
+        d = 1 + (x0 - xN)
+        {-# INLINE getFromArray #-}
+        getFromArray :: Int -> Float
+        getFromArray a = arr `unsafeIndex` (Z :. x0 - a :. y0 + a)
+
+{-As described in the paper, this computes the mean instead of real variance-}
+{-# INLINE variance  #-}
+variance :: Vector Float -> Float
+variance !a =
+  s / l
+  where
+    (s, l) = V.foldl' (\(su, le) n -> (su + n, le + 1)) (0, 0) a
+
+{-# INLINE normalise #-}
+normalise :: Int -> Vector Float -> Vector Float
+normalise ix !list =
+  V.map (/ median) (V.unsafeTail list)
+  where
+    median = sorted `V.unsafeIndex` ix
+    !sorted = V.modify (\v -> V.select v ix) list
+
+{-# INLINE getPeakValue #-}
+getPeakValue :: Int -> Vector Float -> Float
+getPeakValue mid !list =
+  peak / maxVal
+  where
+    peak = V.maximum $ V.unsafeSlice (mid - 1) 3 list
+    maxVal = V.maximum list
 
 {-# INLINE floatMagnitude #-}
 floatMagnitude :: Complex -> Float
@@ -60,63 +117,6 @@ floatMagnitude (r, c) =
   where
     fr = double2Float r
     fc = double2Float c
-
-{-# INLINE dftMagnitude #-}
-dftMagnitude :: Vector Float -> Vector Float
-dftMagnitude a =
-  V.map floatMagnitude . Repa.toUnboxed $ dftc
-  where
-    !list = Repa.fromUnboxed (Z :. (V.length a)) . V.map realToComplex $ a
-    dftc = dftS list
-
--- | Returns the variances of all diagonals in the given array as a list
-{-# INLINE getDiagonalVariances  #-}
-getDiagonalVariances :: (Source r1 Float) =>
-                       Array r1 DIM2 Float -> Vector Float
-getDiagonalVariances !arr =
-   V.fromList . map variance $ getDiagonals (w + h - 1)
-  where
-    (Z :. w :. h) = extent arr
-    {-# INLINE getDiagonals #-}
-    getDiagonals :: Int -> [Vector Float]
-    getDiagonals 0 = []
-    getDiagonals s = (getDiagonalAt s 0) : (getDiagonals $ s - 1)
-
-    {-# INLINE getDiagonalAt #-}
-    getDiagonalAt :: Int -> Int -> Vector Float
-    getDiagonalAt x n
-      | n >= h || x - n < 0 = V.empty
-      | x - n > w = getDiagonalAt x $ n + 1
-      | otherwise = arr `unsafeIndex` (Z :. x-n :. n) `V.cons`
-                    getDiagonalAt x (n + 1)
-
-{-As described in the paper, this computes the mean instead of real variance-}
-{-# INLINE variance  #-}
-variance :: Vector Float -> Float
-variance !a =
-  let (s, l) = V.foldl' (\(su, le) n -> (su + n, le + 1)) (0, 0) a in
-  s / l
-
-{-# INLINE normalise #-}
-normalise :: Vector Float -> Vector Float
-normalise !list =
-  V.map (/ median) (V.unsafeTail list)
-  where
-    median = sorted `V.unsafeIndex` ix
-    ix = V.length list `div` 2
-    !sorted = runST $ do
-      v <- V.thaw list
-      V.select v ix
-      V.unsafeFreeze v
-
-{-# INLINE getPeakValue #-}
-getPeakValue :: Vector Float -> Float
-getPeakValue !list =
-  peak / maxVal
-  where
-    peak = V.maximum $ V.unsafeSlice (mid - 1) 3 list
-    mid  = V.length list `div` 2
-    maxVal = V.maximum list
 
 localCFAAnalyse :: ByteImage -> Analysis ()
 localCFAAnalyse img = do
