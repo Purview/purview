@@ -11,11 +11,13 @@ import Graphics.Forensics.Report
 import Data.Array.Repa (Source(..), Z(..),  DIM2, (:.)(..), Array(..),
                         U, D, computeP, computeUnboxedP)
 import qualified Data.Array.Repa as Repa
-import Data.Array.Repa.Algorithms.Complex
+import Data.Complex
 
 import qualified Data.Vector.Algorithms.Intro as V
 import qualified Data.Vector.Unboxed as V
 import Data.Vector.Unboxed (Vector)
+import Numeric.FFT.Vector.Invertible as V
+import qualified Numeric.FFT.Vector.Plan as V
 
 analyser :: Analyser ByteImage
 analyser =
@@ -37,8 +39,11 @@ localCFAAnalyse img = task "Local CFA analysis" 4 $ do
   hpf <- highpassFilter . byteToFloatImage $ img
   step
   {- Split the image into overlapping fragments, and map the local  -}
-  {- CFA detection function over them -}
-  filtered <- computeUnboxedP $ fragmentMap localAnalysis (Z :. 32 :. 32) hpf
+  {- CFA detection function over them. This is sequential because of  -}
+  {- limitations in the vector-fftw package, but still runs ~6-10 times  -}
+  {- faster than evaluating dftS from repa-algorithms in parallel. -}
+  let filtered = Repa.computeUnboxedS $
+                 fragmentMap localAnalysis (Z :. 32 :. 32) hpf
   step
   {- Return the resulting grayscale image (as RGBA) -}
   rgbaResult <- computeUnboxedP $ Repa.map fromGrayscaleFloat filtered
@@ -60,17 +65,19 @@ localAnalysis !a =
   where
     !ix = len `div` 2
     !len = V.length diags
-    magnitudes = dftMagnitude len diags
+    !p = plan dft len
+    magnitudes = dftMagnitude p diags
     diags = getDiagonalVariances a
 
 -- | Computes the DFT of a vector and returns the magnitudes of the result
 {-# INLINE dftMagnitude #-}
-dftMagnitude :: Int -> Vector Float -> Vector Float
-dftMagnitude len a =
-  V.map floatMagnitude . Repa.toUnboxed $ dftc
+dftMagnitude :: V.Plan (Complex Double) (Complex Double) ->
+                Vector Float -> Vector Float
+dftMagnitude !p a =
+  V.map (double2Float . magnitude) dftc
   where
-    dftc = dftS list
-    list = Repa.fromUnboxed (Z :. len) . V.map realToComplex $ a
+    dftc = execute p list
+    list = V.map ((:+ 0) . float2Double) a
 
 -- | Returns the variances of all diagonals in the given array as a vector
 {-# INLINE getDiagonalVariances  #-}
@@ -124,11 +131,3 @@ getPeakValue mid !list =
   where
     peak = V.maximum $ V.unsafeSlice (mid - 1) 3 list
     maxVal = V.maximum list
-
-{-# INLINE floatMagnitude #-}
-floatMagnitude :: Complex -> Float
-floatMagnitude (r, c) =
-  sqrt (fr * fr + fc * fc)
-  where
-    fr = double2Float r
-    fc = double2Float c

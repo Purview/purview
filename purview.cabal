@@ -118,7 +118,8 @@ Library
     type-level-natural-number   == 1.1.*,
     vect                        == 0.4.*,
     vector                      == 0.9.*,
-    vector-algorithms           == 0.5.*
+    vector-algorithms           == 0.5.*,
+    vector-fftw                 == 0.1.*
 
   -- Modules not exported by this package.
   Other-modules:
