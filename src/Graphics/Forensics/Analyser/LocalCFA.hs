@@ -22,8 +22,8 @@ analyser =
   Analyser
   { analyse = localCFAAnalyse
   , name = "localcfa"
-  , author = "David Flemström & Moritz Roth"
-  , version = readVersion "0.1"
+  , author = "Moritz Roth"
+  , version = readVersion "1.0"
   }
 
 highpass :: Stencil DIM2 Float
@@ -31,19 +31,29 @@ highpass = [stencil2| 0  1  0
                       1 -4  1
                       0  1  0 |]
 
-localcfa :: (Monad m) => ByteImage -> m ByteImage
-localcfa img = do
+localCFAAnalyse :: ByteImage -> Analysis ()
+localCFAAnalyse img = task "Local CFA analysis" 4 $ do
+  {- Extract the green channel and convolve with a highpass filter -}
   hpf <- highpassFilter . byteToFloatImage $ img
-  let fragments = fragmentMap localAnalysis (Z :. 32 :. 32) hpf
-  filtered <- computeUnboxedP fragments
+  step
+  {- Split the image into overlapping fragments, and map the local  -}
+  {- CFA detection function over them -}
+  filtered <- computeUnboxedP $ fragmentMap localAnalysis (Z :. 32 :. 32) hpf
+  step
+  {- Return the resulting grayscale image (as RGBA) -}
   rgbaResult <- computeUnboxedP $ Repa.map fromGrayscaleFloat filtered
-  return (floatToByteImage rgbaResult)
+  step
+  reportInfo "Output: local CFA peak size mapped image."
+    $ reportImage (floatToByteImage rgbaResult)
 
+-- | Extracts the green channel of the image and convolves it with a
+  -- highpass filter
 highpassFilter :: (Monad m) => FloatImage -> m (Array U DIM2 Float)
 highpassFilter !i = do
   greenChannel <- computeUnboxedP $ Repa.map ((* 255) . channelGreen) i
   computeP $ convolveS Clamp highpass greenChannel
 
+-- | Returns the normalised local CFA peak size for an array fragment
 localAnalysis :: Array D DIM2 Float -> Float
 localAnalysis !a =
   getPeakValue ix . normalise ix $ magnitudes
@@ -53,6 +63,7 @@ localAnalysis !a =
     magnitudes = dftMagnitude len diags
     diags = getDiagonalVariances a
 
+-- | Computes the DFT of a vector and returns the magnitudes of the result
 {-# INLINE dftMagnitude #-}
 dftMagnitude :: Int -> Vector Float -> Vector Float
 dftMagnitude len a =
@@ -61,7 +72,7 @@ dftMagnitude len a =
     dftc = dftS list
     list = Repa.fromUnboxed (Z :. len) . V.map realToComplex $ a
 
--- | Returns the variances of all diagonals in the given array as a list
+-- | Returns the variances of all diagonals in the given array as a vector
 {-# INLINE getDiagonalVariances  #-}
 getDiagonalVariances :: (Source r1 Float) =>
                        Array r1 DIM2 Float -> Vector Float
@@ -69,10 +80,12 @@ getDiagonalVariances !arr =
   getDiagonals $ w + h - 1
   where
     (Z :. w :. h) = extent arr
+    {- Get the variance of all diagonals in the array -}
     {-# INLINE getDiagonals #-}
     getDiagonals :: Int -> Vector Float
     getDiagonals s = V.generate s $ variance . getDiagonalAt
 
+    {- Get a single diagonal at position n in x direction -}
     {-# INLINE getDiagonalAt #-}
     getDiagonalAt :: Int -> Vector Float
     getDiagonalAt n =
@@ -94,6 +107,7 @@ variance !a =
   where
     (s, l) = V.foldl' (\(su, le) n -> (su + n, le + 1)) (0, 0) a
 
+{- Removes DC value and normalises by the median -}
 {-# INLINE normalise #-}
 normalise :: Int -> Vector Float -> Vector Float
 normalise ix !list =
@@ -102,6 +116,7 @@ normalise ix !list =
     median = sorted `V.unsafeIndex` ix
     !sorted = V.modify (\v -> V.select v ix) list
 
+{- Gets the peak value from the DFT spectrum and scales it -}
 {-# INLINE getPeakValue #-}
 getPeakValue :: Int -> Vector Float -> Float
 getPeakValue mid !list =
@@ -117,8 +132,3 @@ floatMagnitude (r, c) =
   where
     fr = double2Float r
     fc = double2Float c
-
-localCFAAnalyse :: ByteImage -> Analysis ()
-localCFAAnalyse img = do
-  result <- localcfa img
-  reportInfo "Local CFA peak size mapped image" $ reportImage result

@@ -23,17 +23,25 @@ analyser =
   Analyser
   { analyse = lgAnalyse
   , name = "lg"
-  , author = "David Flemström & Moritz Roth"
+  , author = "Moritz Roth"
   , version = readVersion "1.0"
   }
 
-luminanceGradient :: (Monad m) => ByteImage -> m (ByteImage)
-luminanceGradient !img = do
+lgAnalyse :: ByteImage -> Analysis ()
+lgAnalyse img = task "Luminance gradient analysis" 5 $ do
+  {- Convert image to grayscale -}
   grayscale <- computeP $ toGrayscaleImage 255 img
+  step
+  {- Convolve with horizontal and vertical edge detection kernels -}
   let gX = edgeX grayscale
+  step
   let gY = edgeY grayscale
+  step
+  {- Map the luminance gradient direction into colours -}
   lgImage <- computeP $ Repa.zipWith gradientColour gX gY
-  return $ floatToByteImage lgImage
+  step
+  reportInfo "Output: Luminance gradient mapped image." $
+    reportImage (floatToByteImage lgImage)
 
 {-# INLINE edgeX #-}
 edgeX :: Array U DIM2 Float -> Array PC5 DIM2 Float
@@ -46,6 +54,7 @@ edgeY !a = convolveS Clamp sobelY a
 {-# INLINE gradientColour #-}
 gradientColour ::  Float -> Float -> RGBA Float
 gradientColour gx gy =
+  {- Computes a colour depending on the local light direction -}
   RGBA r g b 1.0
   where
     angle = atan2 gy gx
@@ -58,8 +67,3 @@ gradientColour gx gy =
     getR = (0.5 +) . (/ 2) . negate . sin
     {-# INLINE getG #-}
     getG = (0.5 +) . (/ 2) . negate . cos
-
-lgAnalyse :: ByteImage -> Analysis ()
-lgAnalyse img = do
-  result <- luminanceGradient img
-  reportInfo "Luminance gradient mapped image" $ reportImage result
