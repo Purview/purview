@@ -3,6 +3,10 @@ module Graphics.Forensics.Algorithms.Convolve
        , convolveS
        , OutOfRangeMode(..)
        , outOfRangeFunction
+       , PC5
+       , Stencil(..)
+       , stencil2
+       , makeStencil2
        ) where
 
 import Data.Array.Repa (Array(..), DIM2, Source(..))

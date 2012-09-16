@@ -2,7 +2,8 @@ module Graphics.Forensics.Analyser.LocalCFA where
 
 import GHC.Float
 
-import Graphics.Forensics.Algorithms
+import Graphics.Forensics.Algorithms.Convolve
+import Graphics.Forensics.Algorithms.Fragmentize
 import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image

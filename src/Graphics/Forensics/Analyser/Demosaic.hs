@@ -2,7 +2,7 @@ module Graphics.Forensics.Analyser.Demosaic where
 
 import Prelude hiding (zipWith3)
 
-import Graphics.Forensics.Algorithms
+import Graphics.Forensics.Algorithms.Convolve
 import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image
@@ -28,6 +28,7 @@ highpass = [stencil2| 0  1  0
 demosaicAnalyse :: ByteImage -> Analysis ()
 demosaicAnalyse !img = task "Demosaic analysis" 4 $ do
   let fImg = byteToFloatImage img
+  {-Convole the float image with a highpass filter-}
   let conv = return . convolveS Clamp highpass
   let rmap = computeUnboxedP . flip Repa.map fImg
   r <- conv =<< rmap channelRed
@@ -36,7 +37,7 @@ demosaicAnalyse !img = task "Demosaic analysis" 4 $ do
   step
   b <- conv =<< rmap channelBlue
   step
-  {-Merge the convolved channel into the result image-}
+  {-Merge the convolved channels into the result image-}
   result <- computeP $ zipWith3 fromRGBValues r g b
   reportInfo "Output: image demosaic analysis." $
     reportImage (floatToByteImage result)

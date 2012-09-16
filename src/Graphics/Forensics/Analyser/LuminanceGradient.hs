@@ -1,5 +1,6 @@
 module Graphics.Forensics.Analyser.LuminanceGradient where
-import Graphics.Forensics.Algorithms
+
+import Graphics.Forensics.Algorithms.Convolve
 import Graphics.Forensics.Analyser
 import Graphics.Forensics.Color
 import Graphics.Forensics.Image

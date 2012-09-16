@@ -80,11 +80,12 @@ Library
   -- Modules exported by the library.
   Exposed-modules:
     Control.Monad.Progress,
-    Graphics.Forensics.Algorithms,
     Graphics.Forensics.Algorithms.Convolve,
     Graphics.Forensics.Algorithms.DFT,
     Graphics.Forensics.Algorithms.FFTW,
     Graphics.Forensics.Algorithms.Fragmentize,
+    Graphics.Forensics.Algorithms.ImageUtilities,
+    Graphics.Forensics.Algorithms.Interpolate,
     Graphics.Forensics.Analyser,
     Graphics.Forensics.Array,
     Graphics.Forensics.Channels,
