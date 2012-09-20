@@ -60,6 +60,7 @@ Library
     BangPatterns,
     FlexibleContexts,
     FlexibleInstances,
+    ForeignFunctionInterface,
     FunctionalDependencies,
     MultiParamTypeClasses,
     OverloadedStrings,
@@ -98,6 +99,7 @@ Library
     Graphics.Forensics.Analysers,
 
     Graphics.Forensics.Analyser.Test,
+    Graphics.Forensics.Analyser.Copymove,
     Graphics.Forensics.Analyser.Demosaic,
     Graphics.Forensics.Analyser.LuminanceGradient,
     Graphics.Forensics.Analyser.LocalCFA
@@ -129,8 +131,21 @@ Library
   -- Modules not exported by this package.
   Other-modules:
 
+  C-Sources:
+    src/Graphics/Forensics/Analyser/copymove.c
+
+  CC-options:
+    -std=c99
+    -Wall
+    -pedantic
+    -O3
+
+  Include-dirs:
+    src/Graphics/Forensics/Analyser
+
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
-  -- Build-tools:
+  Build-tools:
+    hsc2hs
 
 Executable purview-console
   Default-language:
